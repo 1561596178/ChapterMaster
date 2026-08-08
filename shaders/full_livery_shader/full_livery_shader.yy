@@ -1,0 +1,12 @@
+{
+  "$GMShader":"",
+  "%Name":"full_livery_shader",
+  "name":"full_livery_shader",
+  "parent":{
+    "name":"Shaders",
+    "path":"folders/Shaders.yy",
+  },
+  "resourceType":"GMShader",
+  "resourceVersion":"2.0",
+  "type":1,
+}

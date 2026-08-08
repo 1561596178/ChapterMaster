@@ -1,0 +1,695 @@
+// Manages space combat, checks if ships are destroyed and does the targeting and pointing of the ship
+image_angle = direction;
+
+if (obj_fleet.start != 5) {
+    exit;
+}
+// Need to every couple of seconds check this
+// with obj_en_ship if not big then disable, check nearest, and activate once more
+if (instance_exists(obj_en_ship)) {
+    target = instance_nearest(x, y, obj_en_ship);
+}
+if (!instance_exists(target)) {
+    exit;
+}
+
+if ((shields > 0) && (shields < maxshields)) {
+    shields += (owner == eFACTION.ELDAR) ? 0.03 : 0.02;
+}
+
+var bull = noone;
+var ok = 0;
+var targe = noone;
+var dist = 9999;
+var front = 0;
+var right = 0;
+var left = 0;
+var rear = 0;
+var facing = "";
+var ammo = 0;
+var range = 0;
+var wep = "";
+var dam = 0;
+var o_dist = 0;
+var spid = 0;
+var gud = 0;
+
+if (owner != eFACTION.ELDAR) {
+    if ((class == "Daemon") && (image_alpha < 1)) {
+        image_alpha += 0.006;
+    }
+
+    // Check if ship is destroyed
+    if (hp <= 0) {
+        for (var wh = 1; wh <= 5; wh++) {
+            if (obj_fleet.enemy[wh] == owner) {
+                gud = wh;
+            }
+        }
+
+        if ((class == "Gorbag's Revenge" || (class == "Dethdeala") || (class == "Kroolboy") || (class == "Desecrator")) || (class == "Custodian")) {
+            obj_fleet.en_capital_lost[gud] += 1;
+        } else if ((class == "Battlekroozer") || (class == "Daemon") || (class == "Avenger Class Grand Cruiser") || (class == "Carnage") || (class == "Emissary") || (class == "Protector")) {
+            obj_fleet.en_frigate_lost[gud] += 1;
+        } else if ((class == "Ravager") || (class == "Iconoclast") || (class == "Warden") || (class == "Castellan")) {
+            obj_fleet.en_escort_lost[gud] += 1;
+        } else if (class == "Leviathan") {
+            obj_fleet.en_capital_lost[gud] += 1;
+        } else if (class == "Razorfiend") {
+            obj_fleet.en_frigate_lost[gud] += 1;
+        } else if ((class == "Stalker") || (class == "Prowler") || (class == "Sword Class Frigate")) {
+            obj_fleet.en_escort_lost[gud] += 1;
+        }
+
+        image_alpha = 0.5;
+
+        if (owner != eFACTION.TYRANIDS) {
+            var husk = instance_create(x, y, obj_en_husk);
+            husk.sprite_index = sprite_index;
+            husk.direction = direction;
+            husk.image_angle = image_angle;
+            husk.depth = depth;
+            husk.image_speed = 0;
+            for (var i = 0; i < choose(4, 5, 6); i++) {
+                var explo = instance_create(x, y, obj_explosion);
+                explo.image_xscale = 0.5;
+                explo.image_yscale = 0.5;
+                explo.x += random_range(sprite_width * 0.25, sprite_width * -0.25);
+                explo.y += random_range(sprite_width * 0.25, sprite_width * -0.25);
+            }
+        }
+        if (owner == eFACTION.TYRANIDS) {
+            effect_create_depth(depth - 1, ef_firework, x, y, 1, c_purple);
+        }
+        instance_destroy();
+    }
+    // While ship is alive, attack
+    if ((hp > 0) && instance_exists(obj_en_ship)) {
+        // TODO on another PR we need to redo how combat works, currently its just "attack" perhaps we can have more precise choise based AI with
+        // simpler patterns?
+        if (class == "Apocalypse Class Battleship") {
+            o_dist = 500;
+            action = "attack";
+            spid = 20;
+        }
+        if (class == "Nemesis Class Fleet Carrier") {
+            o_dist = 1000;
+            action = "attack";
+            spid = 20;
+        }
+        if (class == "Leviathan") {
+            o_dist = 160;
+            action = "attack";
+            spid = 20;
+        }
+        if ((class == "Battle Barge") || (class == "Custodian")) {
+            o_dist = 300;
+            action = "attack";
+            spid = 20;
+        }
+        if (class == "Desecrator") {
+            o_dist = 300;
+            action = "attack";
+            spid = 20;
+        }
+        if (class == "Razorfiend") {
+            o_dist = 100;
+            action = "attack";
+            spid = 25;
+        }
+        if ((class == "Dethdeala") || (class == "Protector") || (class == "Emissary")) {
+            o_dist = 200;
+            action = "attack";
+            spid = 20;
+        }
+        if (class == "Gorbag's Revenge") {
+            o_dist = 200;
+            action = "attack";
+            spid = 20;
+        }
+        if ((class == "Kroolboy") || (class == "Slamblasta")) {
+            o_dist = 200;
+            action = "attack";
+            spid = 25;
+        }
+        if (class == "Battlekroozer") {
+            o_dist = 200;
+            action = "attack";
+            spid = 30;
+        }
+        if ((class == "Avenger") || (class == "Carnage") || (class == "Daemon")) {
+            o_dist = 200;
+            action = "attack";
+            spid = 20;
+        }
+        if ((class == "Ravager") || (class == "Iconoclast") || (class == "Castellan") || (class == "Warden")) {
+            o_dist = 300;
+            action = "attack";
+            spid = 35;
+        }
+        if ((class == "Stalker") || (class == "Sword Class Frigate")) {
+            o_dist = 100;
+            action = "attack";
+            spid = 20;
+        }
+        if (class == "Prowler") {
+            o_dist = 100;
+            action = "attack";
+            spid = 35;
+        }
+        if (class == "Avenger Class Grand Cruiser") {
+            o_dist = 48;
+            action = "broadside";
+            spid = 20;
+        }
+        // if (class!="big") then flank!!!!
+        spid = spid * speed_bonus;
+
+        dist = point_distance(x, y, target.x, target.y) - max(sprite_get_width(sprite_index), sprite_get_height(sprite_index));
+        // For example here we could improve the options and how ships beheave...
+        if ((target != noone) && (action == "attack")) {
+            direction = turn_towards_point(direction, x, y, target.x, target.y, 0.1);
+        }
+        if ((target != noone) && (action == "broadside") && (dist > o_dist)) {
+            if (y >= target.y) {
+                dist = point_distance(x, y, target.x + lengthdir_x(64, target.direction - 180), target.y + lengthdir_y(128, target.direction - 90)) - max(sprite_get_width(sprite_index), sprite_get_height(sprite_index));
+            }
+            if (y < target.y) {
+                dist = point_distance(x, y, target.x + lengthdir_x(64, target.direction - 180), target.y + lengthdir_y(128, target.direction + 90)) - max(sprite_get_width(sprite_index), sprite_get_height(sprite_index));
+            }
+            if ((y > target.y) && (dist > o_dist)) {
+                direction = turn_towards_point(direction, x + lengthdir_x(64, target.direction - 180), y, target.x, target.y + lengthdir_y(128, target.direction - 90), 0.2);
+            }
+            if ((y < target.y) && (dist > o_dist)) {
+                direction = turn_towards_point(direction, x + lengthdir_x(64, target.direction - 180), y, target.x, target.y + lengthdir_y(128, target.direction + 90), 0.2);
+            }
+            if (turn_bonus > 1) {
+                if ((y < target.y) && (dist > o_dist)) {
+                    direction = turn_towards_point(direction, x + lengthdir_x(64, target.direction - 180), y, target.x, target.y + lengthdir_y(128, target.direction + 90), 0.2);
+                }
+            }
+        }
+        // Controls speed based on action
+        if (action == "attack") {
+            if ((dist > o_dist) && (speed < (spid / 10))) {
+                speed += 0.005;
+            }
+            if ((dist < o_dist) && (speed > 0)) {
+                speed -= 0.025;
+            }
+        }
+        if (action == "broadside") {
+            if ((dist > o_dist) && (speed < (spid / 10))) {
+                speed += 0.005;
+            }
+            if ((dist < o_dist) && (speed > 0)) {
+                speed -= 0.025;
+            }
+        }
+        if (speed < 0) {
+            speed = speed * 0.9;
+        }
+        // Weapon reloads
+        if (cooldown[1] > 0) {
+            cooldown[1] -= 1;
+        }
+        if (cooldown[2] > 0) {
+            cooldown[2] -= 1;
+        }
+        if (cooldown[3] > 0) {
+            cooldown[3] -= 1;
+        }
+        if (cooldown[4] > 0) {
+            cooldown[4] -= 1;
+        }
+        if (cooldown[5] > 0) {
+            cooldown[5] -= 1;
+        }
+        if (turret_cool > 0) {
+            turret_cool -= 1;
+        }
+
+        dist = 9999;
+        // Turret targetting
+        if ((turrets > 0) && instance_exists(obj_en_in) && (turret_cool == 0)) {
+            targe = instance_nearest(x, y, obj_en_in);
+            if (instance_exists(targe)) {
+                dist = point_distance(x, y, targe.x, targe.y);
+            }
+            if ((dist > 64) && (dist < 300)) {
+                bull = instance_create(x, y, obj_al_round);
+                bull.direction = point_direction(x, y, targe.x, targe.y);
+                if (owner == eFACTION.TYRANIDS) {
+                    bull.sprite_index = spr_glob;
+                }
+                bull.speed = 20;
+                bull.dam = 3;
+                bull.image_xscale = 0.5;
+                bull.image_yscale = 0.5;
+                turret_cool = floor(60 / turrets);
+                bull.direction += choose(random(10), 1 * -random(10));
+            }
+        }
+        dist = 9999;
+
+        // TODO we could implement facing with stronger shields or other stuff
+        front = 0;
+        right = 0;
+        left = 0;
+        rear = 0;
+
+        target_l = instance_nearest(x + lengthdir_x(64, direction + 90), y + lengthdir_y(64, direction + 90), obj_en_ship);
+        target_r = instance_nearest(x + lengthdir_x(64, direction + 270), y + lengthdir_y(64, direction + 270), obj_en_ship);
+
+        if (collision_line(x, y, x + lengthdir_x(2000, direction), y + lengthdir_y(2000, direction), obj_en_ship, 0, 1)) {
+            front = 1;
+        }
+
+        for (var gg = 1; gg <= weapons; gg++) {
+            // Resets
+            ok = 0;
+            facing = "";
+            ammo = 0;
+            range = 0;
+            wep = "";
+            dam = 0;
+
+            if ((cooldown[gg] <= 0) && (weapon[gg] != "") && (weapon_ammo[gg] > 0)) {
+                ok = 1;
+            }
+            if (ok == 1) {
+                facing = weapon_facing[gg];
+                ammo = weapon_ammo[gg];
+                range = weapon_range[gg];
+            }
+
+            if ((facing == "front") && (front == 1)) {
+                ok = 2;
+            }
+            if (facing == "most") {
+                ok = 2;
+            }
+            if (facing == "special") {
+                ok = 2;
+            }
+            dist = point_distance(x, y, target.x, target.y);
+            if ((facing == "right") && (point_direction(x, y, target_r.x, target_r.y) < 337) && (point_direction(x, y, target_r.x, target_r.y) > 203)) {
+                ok = 2;
+            }
+            if ((facing == "left") && (point_direction(x, y, target_r.x, target_r.y) > 22) && (point_direction(x, y, target_r.x, target_r.y) < 157)) {
+                ok = 2;
+            }
+            if ((ok == 2) && (dist < (range + max(sprite_get_width(sprite_index), sprite_get_height(sprite_index))))) {
+                if ((ammo > 0) && (ammo < 900)) {
+                    ammo -= 1;
+                }
+                weapon_ammo[gg] = ammo;
+                cooldown[gg] = weapon_cooldown[gg];
+                wep = weapon[gg];
+                dam = weapon_dam[gg];
+                if (ammo < 0) {
+                    ok = 0;
+                }
+                ok = 3;
+                // Weapons fire
+                if ((string_count("orpedo", wep) == 0) && (string_count("Interceptor", wep) == 0) && (string_count("ommerz", wep) == 0) && (string_count("Claws", wep) == 0) && (string_count("endrils", wep) == 0) && (ok == 3)) {
+                    bull = instance_create(x + lengthdir_x(32, direction), y + lengthdir_y(32, direction), obj_al_round);
+                    bull.speed = 20;
+                    bull.dam = dam;
+                    if (facing != "front") {
+                        bull.direction = point_direction(x + lengthdir_x(32, direction), y + lengthdir_y(32, direction), target.x, target.y);
+                    }
+                    if (string_count("ova", wep) == 1) {
+                        bull.image_xscale = 2;
+                        bull.image_yscale = 2;
+                    }
+                    if (string_count("eavy Gunz", wep) == 1) {
+                        bull.image_xscale = 1.5;
+                        bull.image_yscale = 1.5;
+                    }
+                    if (string_count("Lance", wep) == 1) {
+                        bull.sprite_index = spr_ground_las;
+                        bull.image_xscale = 1.5;
+                        bull.image_yscale = 1.5;
+                    }
+                    if (string_count("Ion", wep) == 1) {
+                        bull.sprite_index = spr_pulse;
+                        bull.image_xscale = 1.5;
+                        bull.image_yscale = 1.5;
+                    }
+                    if (string_count("Rail", wep) == 1) {
+                        bull.sprite_index = spr_railgun;
+                        bull.image_xscale = 1.5;
+                        bull.image_yscale = 1.5;
+                    }
+                    if (string_count("Gravitic", wep) == 1) {
+                        bull.image_xscale = 2;
+                        bull.image_yscale = 2;
+                    }
+                    if (string_count("Plasma", wep) == 1) {
+                        bull.sprite_index = spr_ground_plasma;
+                        bull.image_xscale = 2;
+                        bull.image_yscale = 2;
+                        bull.speed = 15;
+                    }
+                    if (string_count("Pyro-Acid", wep) == 1) {
+                        bull.sprite_index = spr_glob;
+                        bull.image_xscale = 2;
+                        bull.image_yscale = 2;
+                    }
+                    if ((string_count("Weapons", wep) == 1) && (owner == eFACTION.ELDAR)) {
+                        bull.sprite_index = spr_ground_las;
+                        bull.image_xscale = 2;
+                        bull.image_yscale = 2;
+                    }
+                    if ((string_count("Pulse", wep) == 1) && (owner == eFACTION.ELDAR)) {
+                        bull.sprite_index = spr_pulse;
+                        bull.image_xscale = 1.5;
+                        bull.image_yscale = 1.5;
+                    }
+                }
+                // Torpedo weapons
+                if ((string_count("orpedo", wep) == 1) && (ok == 3)) {
+                    if (class != "Ravager") {
+                        bull = instance_create(x, y + lengthdir_y(-30, direction + 90), obj_al_round);
+                        bull.speed = 10;
+                        bull.direction = direction;
+                        bull.sprite_index = spr_torpedo;
+                        bull.dam = dam;
+                    }
+                    bull = instance_create(x, y + lengthdir_y(-10, direction + 90), obj_al_round);
+                    bull.speed = 10;
+                    bull.direction = direction;
+                    bull.sprite_index = spr_torpedo;
+                    bull.dam = dam;
+                    bull = instance_create(x, y + lengthdir_y(10, direction + 90), obj_al_round);
+                    bull.speed = 10;
+                    bull.direction = direction;
+                    bull.sprite_index = spr_torpedo;
+                    bull.dam = dam;
+                    if (class != "Ravager") {
+                        bull = instance_create(x, y + lengthdir_y(30, direction + 90), obj_al_round);
+                        bull.speed = 10;
+                        bull.direction = direction;
+                        bull.sprite_index = spr_torpedo;
+                        bull.dam = dam;
+                    }
+                }
+                // Melee ship weapons (nids)
+                if (((string_count("Claws", wep) == 1) || (string_count("endrils", wep) == 1)) && (ok == 3)) {
+                    if (target.shields <= 0) {
+                        target.hp -= weapon_dam[wep];
+                    }
+                    if (target.shields > 0) {
+                        target.shields -= weapon_dam[wep];
+                    }
+                }
+                // Special weapons
+                if (((string_count("Interceptor", wep) == 1) || (string_count("ommerz", wep) == 1) || (string_count("Manta", wep) == 1) || (string_count("Glands", wep) == 1) || (string_count("Eldar Launch", wep) == 1)) && (ok == 3)) {
+                    bull = instance_create(x, y + lengthdir_y(-30, direction + 90), obj_al_in);
+                    bull.direction = self.direction;
+                    bull.owner = self.owner;
+                }
+            }
+        }
+    }
+}
+// Checks if the enemy fleet is Eldar
+if (owner == eFACTION.ELDAR) {
+    if (hp <= 0) {
+        for (var wh = 1; wh <= 5; wh++) {
+            if (obj_fleet.enemy[wh] == owner) {
+                gud = wh;
+            }
+        }
+
+        if (class == "Void Stalker") {
+            obj_fleet.en_capital_lost[gud] += 1;
+        }
+        if (class == "Shadow Class") {
+            obj_fleet.en_frigate_lost[gud] += 1;
+        }
+        if ((class == "Hellebore") || (class == "Aconite")) {
+            obj_fleet.en_escort_lost[gud] += 1;
+        }
+
+        image_alpha = 0.5;
+
+        var husk = instance_create(x, y, obj_en_husk);
+        husk.sprite_index = sprite_index;
+        husk.direction = direction;
+        husk.image_angle = image_angle;
+        husk.depth = depth;
+        husk.image_speed = 0;
+
+        for (var i = 0; i < choose(4, 5, 6); i++) {
+            var explo = instance_create(x, y, obj_explosion);
+            explo.image_xscale = 0.5;
+            explo.image_yscale = 0.5;
+            explo.x += random_range(sprite_width * 0.25, sprite_width * -0.25);
+            explo.y += random_range(sprite_width * 0.25, sprite_width * -0.25);
+        }
+        instance_destroy();
+    }
+    if ((hp > 0) && instance_exists(obj_en_ship)) {
+        if (class == "Void Stalker") {
+            o_dist = 300;
+            action = "swoop";
+            spid = 60;
+        }
+        if (class == "Shadow Class") {
+            o_dist = 200;
+            action = "swoop";
+            spid = 80;
+        }
+        if ((class == "Hellebore") || (class == "Aconite")) {
+            o_dist = 200;
+            action = "swoop";
+            spid = 100;
+        }
+
+        dist = point_distance(x, y, target.x, target.y) - max(sprite_get_width(target.sprite_index), sprite_get_height(sprite_index));
+
+        if (target != 0) {
+            if (speed < (spid / 10)) {
+                speed += 0.02;
+            }
+            if (instance_exists(target)) {
+                dist = point_distance(x, y, target.x, target.y);
+
+                if (action == "swoop") {
+                    direction = turn_towards_point(direction, x, y, target.x, target.y, 5 - ship_size);
+                }
+                if ((dist <= o_dist) && collision_line(x, y, x + lengthdir_x(o_dist, direction), y + lengthdir_y(o_dist, direction), obj_en_ship, 0, 1)) {
+                    action = "attack";
+                }
+                if ((dist < 300) && (action == "attack")) {
+                    action = "bank";
+                }
+                if (action == "bank") {
+                    direction = turn_towards_point(direction, x, y, room_width, room_height / 2, 5 - ship_size);
+                }
+                if ((action == "bank") && (dist > 700)) {
+                    action = "attack";
+                }
+            }
+        }
+
+        if ((y < -2000) || (y > room_height + 2000) || (x < -2000) || (x > room_width + 2000)) {
+            hp = -50;
+        }
+        // Weapon and turret cooldown
+        for (var i = 1; i < array_length(cooldown); i++) {
+            if (cooldown[i] > 0) {
+                cooldown[i]--;
+            }
+        }
+        if (turret_cool > 0) {
+            turret_cool -= 1;
+        }
+
+        dist = 9999;
+
+        if ((turrets > 0) && instance_exists(obj_en_in) && (turret_cool == 0)) {
+            targe = instance_nearest(x, y, obj_en_in);
+            if (instance_exists(targe)) {
+                dist = point_distance(x, y, targe.x, targe.y);
+            }
+
+            if ((dist > 64) && (dist < 300)) {
+                bull = instance_create(x, y, obj_al_round);
+                bull.direction = point_direction(x, y, targe.x, targe.y);
+                if (owner == eFACTION.TYRANIDS) {
+                    bull.sprite_index = spr_glob;
+                }
+                if ((owner == eFACTION.TAU) || (owner == eFACTION.ELDAR)) {
+                    bull.sprite_index = spr_pulse;
+                }
+                bull.speed = 20;
+                bull.dam = 3;
+                bull.image_xscale = 0.5;
+                bull.image_yscale = 0.5;
+                turret_cool = floor(60 / turrets);
+                bull.direction += choose(random(10), 1 * -random(10));
+            }
+        }
+        dist = 9999;
+
+        front = 0;
+        right = 0;
+        left = 0;
+        rear = 0;
+
+        target_l = instance_nearest(x + lengthdir_x(64, direction + 90), y + lengthdir_y(64, direction + 90), obj_en_ship);
+        target_r = instance_nearest(x + lengthdir_x(64, direction + 270), y + lengthdir_y(64, direction + 270), obj_en_ship);
+
+        if (collision_line(x, y, x + lengthdir_x(2000, direction), y + lengthdir_y(2000, direction), obj_en_ship, 0, 1)) {
+            front = 1;
+        }
+
+        for (var gg = 1; gg <= weapons; gg++) {
+            ok = 0;
+            facing = "";
+            ammo = 0;
+            range = 0;
+            wep = "";
+            dam = 0;
+
+            if ((cooldown[gg] <= 0) && (weapon[gg] != "") && (weapon_ammo[gg] > 0)) {
+                ok = 1;
+            }
+            if (ok == 1) {
+                facing = weapon_facing[gg];
+                ammo = weapon_ammo[gg];
+                range = weapon_range[gg];
+            }
+
+            if ((facing == "front") && (front == 1)) {
+                ok = 2;
+            }
+            if (facing == "most") {
+                ok = 2;
+            }
+            if (facing == "special") {
+                ok = 2;
+            }
+            dist = point_distance(x, y, target.x, target.y);
+
+            if ((facing == "right") && (point_direction(x, y, target_r.x, target_r.y) < 337) && (point_direction(x, y, target_r.x, target_r.y) > 203)) {
+                ok = 2;
+            }
+            if ((facing == "left") && (point_direction(x, y, target_r.x, target_r.y) > 22) && (point_direction(x, y, target_r.x, target_r.y) < 157)) {
+                ok = 2;
+            }
+            if ((ok == 2) && (dist < (range + max(sprite_get_width(sprite_index), sprite_get_height(sprite_index))))) {
+                if ((ammo > 0) && (ammo < 900)) {
+                    ammo -= 1;
+                }
+                weapon_ammo[gg] = ammo;
+                cooldown[gg] = weapon_cooldown[gg];
+                wep = weapon[gg];
+                dam = weapon_dam[gg];
+                if (ammo < 0) {
+                    ok = 0;
+                }
+                ok = 3;
+                // Weapon types
+                if ((string_count("orpedo", wep) == 0) && (string_count("Interceptor", wep) == 0) && (string_count("ommerz", wep) == 0) && (string_count("Claws", wep) == 0) && (string_count("endrils", wep) == 0) && (ok == 3)) {
+                    bull = instance_create(x + lengthdir_x(32, direction), y + lengthdir_y(32, direction), obj_al_round);
+                    bull.speed = 20;
+                    bull.dam = dam;
+                    if (facing != "front") {
+                        bull.direction = point_direction(x + lengthdir_x(32, direction), y + lengthdir_y(32, direction), target.x, target.y);
+                    }
+                    if (string_count("ova", wep) == 1) {
+                        bull.image_xscale = 2;
+                        bull.image_yscale = 2;
+                    }
+                    if (string_count("eavy Gunz", wep) == 1) {
+                        bull.image_xscale = 1.5;
+                        bull.image_yscale = 1.5;
+                    }
+                    if (string_count("Lance", wep) == 1) {
+                        bull.sprite_index = spr_ground_las;
+                        bull.image_xscale = 1.5;
+                        bull.image_yscale = 1.5;
+                    }
+                    if (string_count("Ion", wep) == 1) {
+                        bull.sprite_index = spr_pulse;
+                        bull.image_xscale = 1.5;
+                        bull.image_yscale = 1.5;
+                    }
+                    if (string_count("Rail", wep) == 1) {
+                        bull.sprite_index = spr_railgun;
+                        bull.image_xscale = 1.5;
+                        bull.image_yscale = 1.5;
+                    }
+                    if (string_count("Gravitic", wep) == 1) {
+                        bull.image_xscale = 2;
+                        bull.image_yscale = 2;
+                    }
+                    if (string_count("Plasma", wep) == 1) {
+                        bull.sprite_index = spr_ground_plasma;
+                        bull.image_xscale = 2;
+                        bull.image_yscale = 2;
+                        bull.speed = 15;
+                    }
+                    if (string_count("Pyro-Acid", wep) == 1) {
+                        bull.sprite_index = spr_glob;
+                        bull.image_xscale = 2;
+                        bull.image_yscale = 2;
+                    }
+                    if ((string_count("Weapons", wep) == 1) && (owner == eFACTION.ELDAR)) {
+                        bull.sprite_index = spr_ground_las;
+                        bull.image_xscale = 2;
+                        bull.image_yscale = 2;
+                    }
+                    if ((string_count("Pulse", wep) == 1) && (owner == eFACTION.ELDAR)) {
+                        bull.sprite_index = spr_pulse;
+                        bull.image_xscale = 1.5;
+                        bull.image_yscale = 1.5;
+                    }
+                }
+                if ((string_count("orpedo", wep) == 1) && (ok == 3)) {
+                    if (class != "Ravager") {
+                        bull = instance_create(x, y + lengthdir_y(-30, direction + 90), obj_al_round);
+                        bull.speed = 10;
+                        bull.direction = direction;
+                        bull.sprite_index = spr_torpedo;
+                        bull.dam = dam;
+                    }
+                    bull = instance_create(x, y + lengthdir_y(-10, direction + 90), obj_al_round);
+                    bull.speed = 10;
+                    bull.direction = direction;
+                    bull.sprite_index = spr_torpedo;
+                    bull.dam = dam;
+                    bull = instance_create(x, y + lengthdir_y(10, direction + 90), obj_al_round);
+                    bull.speed = 10;
+                    bull.direction = direction;
+                    bull.sprite_index = spr_torpedo;
+                    bull.dam = dam;
+                    if (class != "Ravager") {
+                        bull = instance_create(x, y + lengthdir_y(30, direction + 90), obj_al_round);
+                        bull.speed = 10;
+                        bull.direction = direction;
+                        bull.sprite_index = spr_torpedo;
+                        bull.dam = dam;
+                    }
+                }
+                if (((string_count("Claws", wep) == 1) || (string_count("endrils", wep) == 1)) && (ok == 3)) {
+                    if (target.shields <= 0) {
+                        target.hp -= weapon_dam[wep];
+                    }
+                    if (target.shields > 0) {
+                        target.shields -= weapon_dam[wep];
+                    }
+                }
+                if (((string_count("Interceptor", wep) == 1) || (string_count("ommerz", wep) == 1) || (string_count("Manta", wep) == 1) || (string_count("Glands", wep) == 1) || (string_count("Eldar Launch", wep) == 1)) && (ok == 3)) {
+                    bull = instance_create(x, y + lengthdir_y(-30, direction + 90), obj_al_in);
+                    bull.direction = self.direction;
+                    bull.owner = self.owner;
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"scr_turn_first",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"scr_turn_first",
+  "parent":{
+    "name":"Turn",
+    "path":"folders/Scripts/Turn.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

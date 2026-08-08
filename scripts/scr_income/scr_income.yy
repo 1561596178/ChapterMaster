@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"scr_income",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"scr_income",
+  "parent":{
+    "name":"Turn",
+    "path":"folders/Scripts/Turn.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

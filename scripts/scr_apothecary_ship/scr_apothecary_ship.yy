@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"scr_apothecary_ship",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"scr_apothecary_ship",
+  "parent":{
+    "name":"Turn",
+    "path":"folders/Scripts/Turn.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"scr_enemy_ai_b",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"scr_enemy_ai_b",
+  "parent":{
+    "name":"Turn",
+    "path":"folders/Scripts/Turn.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

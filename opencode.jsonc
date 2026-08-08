@@ -1,0 +1,44 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "agent": {
+    "pr_review": {
+      "mode": "primary",
+      "permission": {
+        "doom_loop": "deny",
+        "external_directory": "deny",
+        "edit": "deny",
+        "lsp": "deny",
+        "question": "deny"
+      }
+    },
+    "explore": {
+      "permission": {
+        "doom_loop": "deny",
+        "external_directory": "deny",
+        "edit": "deny",
+        "lsp": "deny",
+        "question": "deny"
+      }
+    },
+    "general": {
+      "permission": {
+        "doom_loop": "deny",
+        "external_directory": "deny",
+        "lsp": "deny",
+        "question": "deny"
+      }
+    },
+  },
+  "compaction": {
+    "auto": true,
+    "prune": true,
+    "reserved": 120000
+  },
+  "formatter": false,
+  "instructions": [
+    "docs/GML_REFERENCE.md",
+    "docs/CODE_STYLE.md"
+  ],
+  "snapshot": false,
+  "model": "opencode/deepseek-v4-flash-free"
+}

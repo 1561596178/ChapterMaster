@@ -1,0 +1,32 @@
+// Checks which systems you can see the planets
+if (obj_controller.menu != eMENU.DEFAULT) {
+    exit;
+}
+if (instances_exist_any([obj_drop_select, obj_saveload, obj_bomb_select])) {
+    exit;
+}
+if (!global.ui_click_lock) {
+    if (obj_controller.location_viewer.is_entered) {
+        exit;
+    }
+    if ((p_type[1] == "Craftworld") && (obj_controller.known[eFACTION.ELDAR] == 0)) {
+        exit;
+    }
+    if (vision == 0) {
+        exit;
+    }
+    if (!scr_void_click()) {
+        exit;
+    }
+    var m_dist = point_distance(x, y, mouse_x, mouse_y);
+    var allow_click_distance = 20 * scale;
+
+    if (((obj_controller.zoomed == 0) && (m_dist < allow_click_distance)) || ((obj_controller.zoomed == 1) && (m_dist < 60)) && (obj_controller.cooldown <= 0)) {
+        // This should prevent overlap with fleet object
+        if (obj_controller.zoomed == 1) {
+            obj_controller.x = x;
+            obj_controller.y = y;
+        }
+        alarm[3] = 1;
+    }
+}

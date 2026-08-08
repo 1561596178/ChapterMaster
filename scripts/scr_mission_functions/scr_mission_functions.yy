@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"scr_mission_functions",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"scr_mission_functions",
+  "parent":{
+    "name":"events_and_missions",
+    "path":"folders/Scripts/events_and_missions.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

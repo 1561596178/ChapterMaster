@@ -1,0 +1,312 @@
+try {
+    if ((obj_controller.settings == 0) || (obj_controller.menu != 23)) {
+        instance_destroy();
+    }
+
+    var _list_basic_armour = global.list_basic_power_armour;
+    var _list_term_armour = global.list_terminator_armour;
+
+    if (engage == true) {
+        for (var co = 0; co <= obj_ini.companies; co++) {
+            if (role_number[co] > 0) {
+                for (var i = 0; i < array_length(obj_ini.role[co]); i++) {
+                    if (obj_ini.role[co][i] == obj_ini.role[100][role]) {
+                        var _unit = fetch_unit([co, i]);
+                        if (!is_struct(_unit)) {
+                            continue;
+                        }
+                        if (_unit.squad != "none") {
+                            var _squad = fetch_squad(_unit.squad);
+                            if (!_squad.allow_bulk_swap) {
+                                continue;
+                            }
+                        }
+
+                        // ** Start Armour **
+                        var unit_armour = _unit.get_armour_data();
+                        var has_valid_armour = is_struct(unit_armour);
+
+                        // Check if unit_armour is a struct and evaluate tag-based or name-based compatibility
+                        if (has_valid_armour) {
+                            switch (req_armour) {
+                                case STR_ANY_POWER_ARMOUR:
+                                    has_valid_armour = array_contains(_list_basic_armour, unit_armour.name);
+                                    break;
+                                case STR_ANY_TERMINATOR_ARMOUR:
+                                    has_valid_armour = array_contains(_list_term_armour, unit_armour.name);
+                                    break;
+                                default:
+                                    has_valid_armour = req_armour == unit_armour.name;
+                            }
+                        }
+
+                        // Attempt to equip if not valid
+                        if (!has_valid_armour) {
+                            var result = _unit.update_armour(req_armour);
+
+                            // Fallback: If request was for Power Armour but update failed, try Terminator
+                            if (result != "complete" && req_armour == STR_ANY_POWER_ARMOUR) {
+                                _unit.update_armour(STR_ANY_TERMINATOR_ARMOUR);
+                            }
+
+                            // Refresh unit_armour after update
+                            unit_armour = _unit.get_armour_data();
+                        }
+                        // ** End Armour **
+
+                        // ** Start Weapons **
+                        if (_unit.weapon_one() != req_wep1) {
+                            if (is_string(_unit.weapon_one(true))) {
+                                if (can_assign_weapon(_unit, req_wep1)) {
+                                    _unit.update_weapon_one(req_wep1);
+                                }
+                            }
+                        }
+                        if (_unit.weapon_two() != req_wep2) {
+                            if (is_string(_unit.weapon_two(true))) {
+                                if (can_assign_weapon(_unit, req_wep2)) {
+                                    _unit.update_weapon_two(req_wep2);
+                                }
+                            }
+                        }
+                        // ** Start Gear **
+                        if (is_string(_unit.gear(true))) {
+                            _unit.update_gear(req_gear);
+                        }
+
+                        // ** Start Mobility Items **
+                        if (_unit.mobility_item() != req_mobi) {
+                            var _forbidden_tags = [
+                                "terminator",
+                                "dreadnought",
+                            ];
+                            if (is_struct(unit_armour) && unit_armour.has_tags(_forbidden_tags)) {
+                                _unit.update_mobility_item("");
+                            } else {
+                                _unit.update_mobility_item(req_mobi);
+                            }
+                        }
+                        // ** End role check **
+                    }
+                    // ** End this marine **
+                }
+                // ** End this company **
+            }
+            // ** End repeat **
+        }
+        engage = false;
+    }
+
+    // ** Refreshing **
+    if ((refresh == true) && (obj_controller.settings > 0)) {
+        total_role_number = 0;
+        total_roles = "";
+        for (var i = 0; i < 11; i++) {
+            role_number[i] = 0;
+        }
+
+        var _total_role_gear = new CountingMap();
+
+        all_equip = "";
+        req_armour = "";
+        req_armour_num = 0;
+        have_armour_num = 0;
+        req_wep1 = "";
+        req_wep1_num = 0;
+        have_wep1_num = 0;
+        req_wep2 = "";
+        req_wep2_num = 0;
+        have_wep2_num = 0;
+        req_gear = "";
+        req_gear_num = 0;
+        have_gear_num = 0;
+        req_mobi = "";
+        req_mobi_num = 0;
+        have_mobi_num = 0;
+        good1 = 0;
+        good2 = 0;
+        good3 = 0;
+        good4 = 0;
+        good5 = 0;
+
+        req_armour = obj_ini.armour[100][role];
+        req_wep1 = obj_ini.wep1[100][role];
+        req_wep2 = obj_ini.wep2[100][role];
+        req_gear = obj_ini.gear[100][role];
+        req_mobi = obj_ini.mobi[100][role];
+
+        for (var co = 0; co < 11; co++) {
+            for (var i = 0; i < array_length(obj_ini.role[co]); i++) {
+                if (obj_ini.role[co][i] == obj_ini.role[100][role]) {
+                    role_number[co] += 1;
+
+                    // Weapon1
+                    var onc = 0;
+                    if ((string_count("&", obj_ini.wep1[co][i]) > 0) && (onc == 0)) {
+                        onc = 1;
+                        have_wep1_num += 1;
+                    }
+                    if ((obj_ini.wep1[co][i] == req_wep1) && (onc == 0)) {
+                        have_wep1_num += 1;
+                        onc = 1;
+                    }
+                    if ((obj_ini.wep2[co][i] == req_wep1) && (onc == 0)) {
+                        have_wep1_num += 1;
+                        onc = 1;
+                    }
+
+                    // Weapon2
+                    onc = 0;
+                    if ((string_count("&", obj_ini.wep2[co][i]) > 0) && (onc == 0)) {
+                        onc = 1;
+                        have_wep2_num += 1;
+                    }
+                    if ((obj_ini.wep1[co][i] == req_wep2) && (onc == 0)) {
+                        have_wep2_num += 1;
+                        onc = 1;
+                    }
+                    if ((obj_ini.wep2[co][i] == req_wep2) && (onc == 0)) {
+                        have_wep2_num += 1;
+                        onc = 1;
+                    }
+
+                    if (req_armour != "") {
+                        var yes = false;
+
+                        if (req_armour == STR_ANY_POWER_ARMOUR) {
+                            if (array_contains(_list_basic_armour, obj_ini.armour[co][i])) {
+                                yes = true;
+                            }
+                        } else if (req_armour == STR_ANY_TERMINATOR_ARMOUR) {
+                            if (array_contains(_list_term_armour, obj_ini.armour[co][i])) {
+                                yes = true;
+                            }
+                        }
+
+                        if (string_count("&", obj_ini.armour[co][i]) > 0) {
+                            yes = true;
+                        } else if (obj_ini.armour[co][i] == req_armour) {
+                            yes = true;
+                        }
+
+                        if (yes == true) {
+                            have_armour_num += 1;
+                        }
+                    }
+
+                    if (req_gear != "") {
+                        if (string_count("&", obj_ini.gear[co][i]) == 0) {
+                            if (obj_ini.gear[co][i] == req_gear) {
+                                have_gear_num += 1;
+                            }
+                        }
+                    }
+
+                    if (req_mobi != "") {
+                        if (string_count("&", obj_ini.mobi[co][i]) == 0) {
+                            if (obj_ini.mobi[co][i] == req_mobi) {
+                                have_mobi_num += 1;
+                            }
+                        }
+                    }
+                }
+
+                if (obj_ini.role[co][i] == obj_ini.role[100][role]) {
+                    var _slots = [obj_ini.wep1[co][i], obj_ini.wep2[co][i], obj_ini.armour[co][i], obj_ini.gear[co][i], obj_ini.mobi[co][i]];
+                    for (var s = 0; s < array_length(_slots); s++) {
+                        if (!is_real(_slots[s])) {
+                            _total_role_gear.add(_slots[s]);
+                        }
+                    }
+                }
+            }
+        }
+
+        have_wep1_num += scr_item_count(req_wep1);
+        have_wep2_num += scr_item_count(req_wep2);
+
+        if (req_armour == STR_ANY_POWER_ARMOUR) {
+            for (var g = 0; g < array_length(_list_basic_armour); g++) {
+                have_armour_num += scr_item_count(_list_basic_armour[g]);
+            }
+        } else if (req_armour == STR_ANY_TERMINATOR_ARMOUR) {
+            for (var g = 0; g < array_length(_list_term_armour); g++) {
+                have_armour_num += scr_item_count(_list_term_armour[g]);
+            }
+        } else {
+            have_armour_num += scr_item_count(req_armour);
+        }
+
+        have_gear_num += scr_item_count(req_gear);
+        have_mobi_num += scr_item_count(req_mobi);
+
+        total_role_number = 0;
+
+        for (var i = 0; i < 11; i++) {
+            if (role_number[i] > 0) {
+                req_wep1_num += role_number[i];
+                req_wep2_num += role_number[i];
+                req_armour_num += role_number[i];
+                req_gear_num += role_number[i];
+                req_mobi_num += role_number[i];
+                total_role_number += role_number[i];
+            }
+        }
+        total_roles = "";
+        if (total_role_number > 0) {
+            var _role_name = obj_ini.role[100][role];
+            total_roles = L("You currently have ") + string(total_role_number) + "x " + L(_role_name) + L(" across all companies.\n");
+            for (var i = 0; i < 11; i++) {
+                var romanNumerals = scr_roman_numerals();
+                var _company_name = i == 0 ? L("HQ") : $"{romanNumerals[i - 1]} " + L("Company");
+
+                if (role_number[i] > 0) {
+                    total_roles += " " + _company_name + ": " + string(role_number[i]) + ";";
+                }
+            }
+        }
+
+        // Add up messages
+        var _totals_string = _total_role_gear.get_custom_string(function(_key, _count, _i, _keys) {
+            return $"{_count}x {L(_key)}{smart_delimeter_sign(_keys, _i, false)}";
+        });
+        if (_totals_string != "") {
+            all_equip = L("In total they are equipped with: ") + _totals_string + ".";
+        }
+
+        refresh = false;
+
+        if (tab > -1) {
+            item_name = [];
+            var is_hand_slot = tab == 0 || tab == 1;
+            scr_get_item_names(item_name, obj_controller.settings, tab, is_hand_slot ? eENGAGEMENT.ANY : eENGAGEMENT.NONE, true, false);
+        }
+
+        good1 = 0;
+        good2 = 0;
+        good3 = 0;
+        good4 = 0;
+        good5 = 0;
+
+        if ((req_wep1_num <= have_wep1_num) || (req_wep1 == "")) {
+            good1 = 1;
+        }
+        if ((req_wep2_num <= have_wep2_num) || (req_wep2 == "")) {
+            good2 = 1;
+        }
+        if ((req_armour_num <= have_armour_num) || (req_armour == "")) {
+            good3 = 1;
+        }
+        if ((req_gear_num <= have_gear_num) || (req_gear == "")) {
+            good4 = 1;
+        }
+        if ((req_mobi_num <= have_mobi_num) || (req_mobi == "")) {
+            good5 = 1;
+        }
+    }
+} catch (_exception) {
+    ERROR_HANDLER.handle_exception(_exception);
+    obj_controller.menu = 21;
+    obj_controller.settings = 0;
+    instance_destroy();
+}

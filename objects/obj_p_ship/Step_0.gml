@@ -1,0 +1,452 @@
+image_angle = direction;
+
+if (obj_fleet.start != 5) {
+    exit;
+}
+
+if (mouse_check_button_pressed(mb_right) && (selected == 1) && (!instance_exists(obj_circular)) && obj_fleet.control) {
+    var stahp = 0;
+    var xx = camera_get_view_x(view_camera[0]);
+    var yy = camera_get_view_y(view_camera[0]);
+
+    if (obj_controller.zoomed == 0) {
+        if (point_in_rectangle(mouse_x, mouse_y, xx + 12, yy + 436, xx + 48, yy + 480)) {
+            stahp = 1;
+        }
+    } else if (obj_controller.zoomed == 1) {
+        if (point_in_rectangle(mouse_x, mouse_y, xx + 24, yy + 872, xx + 90, yy + 960)) {
+            stahp = 1;
+        }
+    }
+
+    if (stahp == 0) {
+        paction = "";
+        instance_create(20, 20, obj_circular);
+    }
+}
+
+var dist;
+
+if ((shields > 0) && (shields < maxshields)) {
+    shields += 0.02;
+}
+if (board_cooldown >= 0) {
+    board_cooldown -= 1;
+}
+
+// Need to every couple of seconds check this
+// with obj_en_ship if not big then disable, check nearest, and activate once more
+
+if (instance_exists(target)) {
+    if (((target.x < 3) && (target.y < 3)) || (target.hp < 0)) {
+        target = noone;
+    }
+}
+if ((!instance_exists(target)) || (target == noone)) {
+    with (obj_en_ship) {
+        if (((x < 3) && (y < 3)) || (hp <= 0)) {
+            instance_deactivate_object(id);
+        }
+    }
+    target = instance_nearest(x, y, obj_en_ship);
+    instance_activate_object(obj_en_ship);
+}
+//if (!instance_exists(target)) then exit;
+
+if (instance_exists(obj_en_ship)) {
+    if (!instance_exists(target) && (instance_nearest(x, y, obj_en_ship).x > 500)) {
+        target = instance_nearest(x, y, obj_en_ship);
+    }
+
+    if (!instance_exists(target)) {
+        target = instance_nearest(x, y, obj_en_ship);
+    }
+}
+
+if ((hp <= 0) && (x > -5000)) {
+    if ((class == "Battle Barge") || (class == "Gloriana")) {
+        obj_fleet.capital -= 1;
+        obj_fleet.capital_lost += 1;
+    }
+    if (class == "Strike Cruiser") {
+        obj_fleet.frigate -= 1;
+        obj_fleet.frigate_lost += 1;
+    }
+    if (class == "Hunter") {
+        obj_fleet.escort -= 1;
+        obj_fleet.escort_lost += 1;
+    }
+    if (class == "Gladius") {
+        obj_fleet.escort -= 1;
+        obj_fleet.escort_lost += 1;
+    }
+
+    obj_fleet.ship_lost[ship_id] = 1; // show_message("obj_fleet.ship_lost["+string(ship_id)+"] = 1");
+
+    image_alpha = 0.5;
+    if (obj_fleet.start != 0) {
+        /*ex=instance_create(x,y,obj_explosion);
+        ex.image_xscale=2;ex.image_yscale=2;
+        ex.image_speed=0.75;*/
+
+        var husk;
+        husk = instance_create(x, y, obj_en_husk);
+        husk.sprite_index = sprite_index;
+        husk.direction = direction;
+        husk.image_angle = image_angle;
+        husk.depth = depth;
+        husk.image_speed = 0;
+        repeat (choose(4, 5, 6)) {
+            var explo;
+            explo = instance_create(x, y, obj_explosion);
+            explo.image_xscale = 0.5;
+            explo.image_yscale = 0.5;
+            explo.x += random_range(sprite_width * 0.25, sprite_width * -0.25);
+            explo.y += random_range(sprite_width * 0.25, sprite_width * -0.25);
+        }
+    }
+    x = -7000;
+    y = room_height / 2;
+}
+if ((hp > 0) && instance_exists(target)) {
+    for (var i = 0; i < array_length(cooldown); i++) {
+        if (cooldown[i] > 0) {
+            cooldown[i]--;
+        }
+    }
+
+    if ((class == "Apocalypse Class Battleship") || (class == "Gloriana")) {
+        o_dist = 500;
+        action = "attack";
+    } else if (class == "Nemesis Class Fleet Carrier") {
+        o_dist = 1000;
+        action = "attack";
+    } else if (class == "Avenger Class Grand Cruiser") {
+        o_dist = 64;
+        action = "broadside";
+    } else if ((class == "Battle Barge") || (class == "Strike Cruiser")) {
+        o_dist = 300;
+        action = "attack";
+    } else if ((class == "Hunter") || (class == "Gladius")) {
+        o_dist = 64;
+        action = "flank";
+    }
+    // if (class!="big") then flank!!!!
+
+    dist = point_distance(x, y, target.x, target.y) - max(sprite_get_width(sprite_index), sprite_get_height(sprite_index));
+
+    // STC Bonuses
+    var ts;
+    ts = 0.2;
+    if (obj_controller.stc_bonus[5] == 3) {
+        ts += 0.1;
+    }
+
+    if ((paction != "move") && (paction != "attack_move") && (paction != "turn") && (paction != "attack_turn")) {
+        if ((target != 0) && (action == "attack")) {
+            direction = turn_towards_point(direction, x, y, target.x, target.y, ts / 2);
+        }
+        if ((target != 0) && (action == "broadside") && (dist > o_dist)) {
+            if (y >= target.y) {
+                dist = point_distance(x, y, target.x + lengthdir_x(64, target.direction - 180), target.y + lengthdir_y(128, target.direction - 90)) - max(sprite_get_width(sprite_index), sprite_get_height(sprite_index));
+            }
+            if (y < target.y) {
+                dist = point_distance(x, y, target.x + lengthdir_x(64, target.direction - 180), target.y + lengthdir_y(128, target.direction + 90)) - max(sprite_get_width(sprite_index), sprite_get_height(sprite_index));
+            }
+            if ((y > target.y) && (dist > o_dist)) {
+                direction = turn_towards_point(direction, x + lengthdir_x(64, target.direction - 180), y, target.x, target.y + lengthdir_y(128, target.direction - 90), ts);
+            }
+            if ((y < target.y) && (dist > o_dist)) {
+                direction = turn_towards_point(direction, x + lengthdir_x(64, target.direction - 180), y, target.x, target.y + lengthdir_y(128, target.direction + 90), ts);
+            }
+        }
+        if ((target != 0) && (action == "flank") && (dist > o_dist)) {
+            if (y >= target.y) {
+                dist = point_distance(x, y, target.x + lengthdir_x(64, target.direction - 180), target.y + lengthdir_y(128, target.direction - 90)) - max(sprite_get_width(sprite_index), sprite_get_height(sprite_index));
+            }
+            if (y < target.y) {
+                dist = point_distance(x, y, target.x + lengthdir_x(64, target.direction - 180), target.y + lengthdir_y(128, target.direction + 90)) - max(sprite_get_width(sprite_index), sprite_get_height(sprite_index));
+            }
+            if ((y > target.y) && (dist > o_dist)) {
+                direction = turn_towards_point(direction, x, y, target.x, target.y, ts);
+            }
+            if ((y < target.y) && (dist > o_dist)) {
+                direction = turn_towards_point(direction, x, y, target.x, target.y, ts);
+            }
+        }
+    }
+
+    // STC Bonuses
+    var speed_up = 0.005;
+    var speed_down = 0.025;
+    if (obj_controller.stc_bonus[6] == 3) {
+        speed_up = 0.008;
+        speed_down = 0.037;
+    }
+
+    if ((paction == "turn") || (paction == "attack_turn")) {
+        direction = turn_towards_point(direction, x, y, target_x, target_y, ts / 2);
+        dist = point_distance(x, y, target_x, target_y);
+        if (y > target_y) {
+            direction = turn_towards_point(direction, x, y, target_x, target_y, ts);
+        }
+        if (y < target_y) {
+            direction = turn_towards_point(direction, x, y, target_x, target_y, ts);
+        }
+        if (speed > 0) {
+            speed -= speed_down;
+        }
+
+        if ((direction - point_direction(x, y, target_x, target_y) <= 2) && (direction - point_direction(x, y, target_x, target_y) >= -2)) {
+            if (paction == "turn") {
+                paction = "move";
+            }
+            if (paction == "attack_turn") {
+                paction = "attack_move";
+            }
+        }
+    }
+
+    if ((paction != "move") && (paction != "turn") && (paction != "attack_move") && (paction != "attack_turn")) {
+        if (action == "attack") {
+            if ((dist > o_dist) && (speed < max_speed)) {
+                speed += speed_up;
+            }
+            if ((dist < o_dist) && (speed > 0)) {
+                speed -= speed_down;
+            }
+        }
+        if (action == "broadside") {
+            if ((dist > o_dist) && (speed < max_speed)) {
+                speed += speed_up;
+            }
+            if ((dist < o_dist) && (speed > 0)) {
+                speed -= speed_down;
+            }
+        }
+        if (action == "flank") {
+            // flank here
+            if ((dist > o_dist) && (speed < max_speed)) {
+                speed += speed_up;
+            }
+            if ((dist < o_dist) && (speed > 0)) {
+                speed -= speed_down;
+            }
+        }
+    }
+    if ((paction == "move") || (paction == "attack_move")) {
+        direction = turn_towards_point(direction, x, y, target_x, target_y, ts / 2);
+        dist = point_distance(x, y, target_x, target_y);
+        if (y > target_y) {
+            direction = turn_towards_point(direction, x, y, target_x, target_y, ts);
+        }
+        if (y < target_y) {
+            direction = turn_towards_point(direction, x, y, target_x, target_y, ts);
+        }
+
+        if ((paction == "attack_move") && instance_exists(obj_en_ship)) {
+            if (!instance_exists(target)) {
+                target = instance_nearest(x, y, obj_en_ship);
+            }
+            dist = point_distance(x, y, target.x, target.y);
+            if (dist <= o_dist) {
+                paction = "";
+                action = "attack";
+            }
+        }
+
+        if ((dist > 20) && (speed < max_speed)) {
+            speed += speed_up;
+        }
+        if ((dist <= 20) && (speed > 0)) {
+            paction = "";
+            action = "attack";
+        }
+    }
+
+    if (speed < 0) {
+        speed = speed * 0.9;
+    }
+    if (turret_cool > 0) {
+        turret_cool -= 1;
+    }
+
+    if ((turrets > 0) && instance_exists(obj_en_in) && (turret_cool == 0)) {
+        dist = 9999;
+        var targe = instance_nearest(x, y, obj_en_in);
+        if (instance_exists(targe)) {
+            dist = point_distance(x, y, targe.x, targe.y);
+        }
+
+        if ((dist > 64) && (dist < 300)) {
+            var bull = instance_create(x, y, obj_p_round);
+            bull.direction = point_direction(x, y, targe.x, targe.y);
+            bull.speed = 20;
+            bull.dam = 3;
+            bull.image_xscale = 0.5;
+            bull.image_yscale = 0.5;
+            turret_cool = floor(60 / turrets);
+            bull.direction += choose(random(3), 1 * -random(3));
+        }
+    }
+    var rdir = 0;
+
+    var xx = lengthdir_x(64, direction + 90);
+    var yy = lengthdir_y(64, direction + 90);
+
+    var front = 0;
+    var right = 0;
+    var left = 0;
+
+    var bull = noone;
+    var targe = instance_nearest(xx, yy, obj_en_ship);
+    if (instance_exists(targe)) {
+        rdir = point_direction(x, y, target.x, target.y);
+        if ((rdir > 45) && (rdir <= 135) && (targe != target)) {
+            target_r = targe;
+            right = 1;
+        }
+        if ((rdir > 225) && (rdir <= 315) && (targe != target) && (targe != target_r)) {
+            target_l = targe;
+            left = 1;
+        }
+        if (collision_line(x, y, x + lengthdir_x(2000, direction), y + lengthdir_y(2000, direction), obj_en_ship, 0, 1)) {
+            front = 1;
+        }
+
+        var facing = "", ammo = 0, range = 0, wep = "", dam = 0;
+
+        for (var gg = 1; gg < array_length(weapon); gg++) {
+            var ok = 0;
+            facing = "";
+            ammo = 0;
+            range = 0;
+            wep = "";
+
+            if ((cooldown[gg] <= 0) && (weapon[gg] != "") && (weapon_ammo[gg] > 0)) {
+                ok = 1;
+            }
+            if (ok == 1) {
+                facing = weapon_facing[gg];
+                ammo = weapon_ammo[gg];
+                range = weapon_range[gg];
+            }
+
+            targe = target;
+
+            if (facing == "right") {
+                targe = target_r;
+            }
+            if (facing == "left") {
+                targe = target_l;
+            }
+            if (((facing == "front") || (facing == "most")) && (front == 1)) {
+                ok = 2;
+            }
+            if ((facing == "right") || (facing == "most") && (right == 1)) {
+                ok = 2;
+            }
+            if ((facing == "left") || (facing == "most") && (left == 1)) {
+                ok = 2;
+            }
+            if (facing == "special") {
+                ok = 2;
+            }
+            if (instance_exists(targe)) {
+                dist = point_distance(x, y, targe.x, targe.y);
+
+                if ((ok == 2) && (dist < (range + max(sprite_get_width(sprite_index), sprite_get_height(sprite_index))))) {
+                    weapon_ammo[gg] = ammo;
+                    cooldown[gg] = weapon_cooldown[gg];
+                    wep = weapon[gg];
+                    dam = weapon_dam[gg];
+
+                    if (ammo < 0) {
+                        ok = 0;
+                    }
+                    ok = 3;
+
+                    if ((string_count("orpedo", wep) == 0) && (string_count("hawk", wep) == 0) && (ok == 3)) {
+                        bull = instance_create(x + lengthdir_x(32, direction), y + lengthdir_y(32, direction), obj_p_round);
+                        bull.speed = 20;
+                        bull.dam = dam;
+                        if (targe == target) {
+                            bull.direction = point_direction(x + lengthdir_x(32, direction), y + lengthdir_y(32, direction), target.x, target.y);
+                        }
+                        if (facing != "front") {
+                            bull.direction = point_direction(x + lengthdir_x(32, direction), y + lengthdir_y(32, direction), target.x, target.y);
+                        }
+                        if (string_count("ova", wep) == 1) {
+                            bull.image_xscale = 2;
+                            bull.image_yscale = 2;
+                        }
+                        if (wep == "Lance Battery") {
+                            bull.sprite_index = spr_ground_las;
+                            bull.image_xscale = 2;
+                            bull.image_yscale = 2;
+                        }
+                        if (wep == "Plasma Cannon") {
+                            bull.sprite_index = spr_ground_plasma;
+                            bull.image_xscale = 3;
+                            bull.image_yscale = 3;
+                        }
+                    }
+                    if ((string_count("orpedo", wep) == 1) && (ok == 3)) {
+                        if (sprite_index == spr_ship_bb) {
+                            bull = instance_create(x, y + lengthdir_y(-30, direction + 90), obj_p_round);
+                            bull.speed = 10;
+                            bull.direction = direction;
+                            bull.sprite_index = spr_torpedo;
+                            bull.dam = dam;
+                        }
+
+                        bull = instance_create(x, y + lengthdir_y(-10, direction + 90), obj_p_round);
+                        bull.speed = 10;
+                        bull.direction = direction;
+                        bull.sprite_index = spr_torpedo;
+                        bull.dam = dam;
+                        bull = instance_create(x, y + lengthdir_y(10, direction + 90), obj_p_round);
+                        bull.speed = 10;
+                        bull.direction = direction;
+                        bull.sprite_index = spr_torpedo;
+                        bull.dam = dam;
+
+                        if (sprite_index == spr_ship_bb) {
+                            bull = instance_create(x, y + lengthdir_y(30, direction + 90), obj_p_round);
+                            bull.speed = 10;
+                            bull.direction = direction;
+                            bull.sprite_index = spr_torpedo;
+                            bull.dam = dam;
+                        }
+                    }
+                    if ((string_count("hawk", wep) == 1) && (ok == 3)) {
+                        bull = instance_create(x, y + lengthdir_y(-30, direction + 90), obj_p_th);
+                        bull.direction = self.direction;
+                    }
+                }
+            }
+        }
+    }
+}
+
+//Deploy boarding craft logic
+if (instance_exists(obj_en_ship) && (boarders > 0) && (board_cooldown <= 0) && ((board_capital == true) || (board_frigate == true))) {
+    for (var eh = 1; eh <= 2; eh++) {
+        var te = 0;
+        if ((eh == 1) && (board_capital == true)) {
+            if (instance_exists(obj_en_capital)) {
+                te = instance_nearest(x, y, obj_en_capital);
+            }
+        }
+        if ((eh == 2) && (board_frigate == true)) {
+            if (instance_exists(obj_en_cruiser)) {
+                te = instance_nearest(x, y, obj_en_cruiser);
+            }
+        }
+        if ((te != 0) && instance_exists(te)) {
+            if (point_distance(x, y, te.x, te.y) <= 428) {
+                create_boarding_craft(te);
+            }
+        }
+    }
+}

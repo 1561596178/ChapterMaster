@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"scr_roman",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"scr_roman",
+  "parent":{
+    "name":"Diplomacy",
+    "path":"folders/Scripts/Diplomacy.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

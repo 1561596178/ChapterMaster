@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"scr_bolt",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"scr_bolt",
+  "parent":{
+    "name":"Sys",
+    "path":"folders/Scripts/Sys.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

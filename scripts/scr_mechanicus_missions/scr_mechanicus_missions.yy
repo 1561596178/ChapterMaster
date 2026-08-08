@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"scr_mechanicus_missions",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"scr_mechanicus_missions",
+  "parent":{
+    "name":"events_and_missions",
+    "path":"folders/Scripts/events_and_missions.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

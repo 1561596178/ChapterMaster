@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"scr_shader_initialize",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"scr_shader_initialize",
+  "parent":{
+    "name":"Sys",
+    "path":"folders/Scripts/Sys.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

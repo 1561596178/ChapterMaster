@@ -1,0 +1,26 @@
+{
+  "$GMSound":"v2",
+  "%Name":"snd_postbattle",
+  "audioGroupId":{
+    "name":"audiogroup_music",
+    "path":"audiogroups/audiogroup_music",
+  },
+  "bitDepth":1,
+  "channelFormat":1,
+  "compression":1,
+  "compressionQuality":6,
+  "conversionMode":0,
+  "duration":279.71918,
+  "exportDir":"sounds",
+  "name":"snd_postbattle",
+  "parent":{
+    "name":"Unused",
+    "path":"folders/Sounds/Unused.yy",
+  },
+  "preload":true,
+  "resourceType":"GMSound",
+  "resourceVersion":"2.0",
+  "sampleRate":44100,
+  "soundFile":"snd_postbattle",
+  "volume":1.0,
+}

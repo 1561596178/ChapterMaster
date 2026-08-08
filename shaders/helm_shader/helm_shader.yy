@@ -1,0 +1,12 @@
+{
+  "$GMShader":"",
+  "%Name":"helm_shader",
+  "name":"helm_shader",
+  "parent":{
+    "name":"Shaders",
+    "path":"folders/Shaders.yy",
+  },
+  "resourceType":"GMShader",
+  "resourceVersion":"2.0",
+  "type":1,
+}

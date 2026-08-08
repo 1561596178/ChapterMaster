@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"is_specialist",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"is_specialist",
+  "parent":{
+    "name":"Sys",
+    "path":"folders/Scripts/Sys.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

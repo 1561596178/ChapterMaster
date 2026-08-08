@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"scr_company_view",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"scr_company_view",
+  "parent":{
+    "name":"Interface",
+    "path":"folders/Scripts/Interface.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

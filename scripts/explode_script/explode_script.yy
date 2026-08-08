@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"explode_script",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"explode_script",
+  "parent":{
+    "name":"Sys",
+    "path":"folders/Scripts/Sys.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

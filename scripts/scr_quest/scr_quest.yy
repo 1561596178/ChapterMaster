@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"scr_quest",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"scr_quest",
+  "parent":{
+    "name":"Diplomacy",
+    "path":"folders/Scripts/Diplomacy.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

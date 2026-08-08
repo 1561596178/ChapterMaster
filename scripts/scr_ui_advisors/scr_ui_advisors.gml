@@ -1,0 +1,814 @@
+/// @self Asset.GMObject.obj_controller
+function scr_ui_advisors() {
+    var romanNumerals = scr_roman_numerals();
+    var xx = camera_get_view_x(view_camera[0]);
+    var yy = camera_get_view_y(view_camera[0]);
+    var blurp = "";
+    var eta = 0;
+
+    // This script draws all of the ADVISOR screens
+    // *** Fleet advisor was here ***
+
+    // ** Fleet **
+    if (menu == eMENU.FLEET) {
+        scr_fleet_advisor();
+    }
+
+    // ** Librarium **
+    if (menu == eMENU.LIBRARIUM) {
+        scr_librarium();
+    }
+
+    // ** Recruiting **
+    if (menu == eMENU.RECRUITING) {
+        scr_draw_recruit_advisor();
+    }
+
+    // ** Armamentarium **
+    if (menu == eMENU.ARMAMENTARIUM) {}
+
+    // ** Apothecarium **
+    if (menu == eMENU.APOTHECARION) {
+        scr_apothecarium();
+    }
+
+    // ** Reclusium **
+    if (menu == eMENU.RECLUSIAM) {
+        draw_sprite(spr_rock_bg, 0, xx, yy);
+
+        draw_set_alpha(0.75);
+        draw_set_color(0);
+        draw_rectangle(xx + 342, yy + 66, xx + 903, yy + 818, 0);
+        draw_set_alpha(1);
+        draw_set_color(c_gray);
+        draw_rectangle(xx + 342, yy + 66, xx + 903, yy + 818, 1);
+        draw_line(xx + 342, yy + 426, xx + 903, yy + 426);
+
+        draw_set_alpha(0.75);
+        draw_set_color(0);
+        draw_rectangle(xx + 945, yy + 66, xx + 1580, yy + 818, 0);
+        draw_set_alpha(1);
+        draw_set_color(c_gray);
+        draw_rectangle(xx + 945, yy + 66, xx + 1580, yy + 818, 1);
+
+        if (menu_adept == 0) {
+            if (struct_exists(obj_ini.custom_advisors, "chaplain")) {
+                scr_image("advisor/splash", obj_ini.custom_advisors.chaplain, xx + 16, yy + 43, 310, 828);
+            } else {
+                scr_image("advisor/splash", 3, xx + 16, yy + 43, 310, 828);
+            }
+            draw_set_halign(fa_left);
+            draw_set_color(c_gray);
+            draw_set_font(fnt_40k_30b);
+            draw_text_transformed(xx + 336 + 16, yy + 66, L("Reclusium"), 0.75, 0.75, 0);
+            draw_text_transformed(xx + 336 + 16, yy + 112, string_hash_to_newline(L("Master of Sanctity ") + string(obj_ini.name[0][2])), 0.6, 0.6, 0);
+        }
+        if (menu_adept == 1) {
+            scr_image("advisor/splash", 1, xx + 16, yy + 43, 310, 828);
+            draw_set_halign(fa_left);
+            draw_set_color(c_gray);
+            draw_set_font(fnt_40k_30b);
+            draw_text_transformed(xx + 336 + 16, yy + 66, L("Reclusium"), 0.75, 0.75, 0);
+            draw_text_transformed(xx + 336 + 16, yy + 112, string_hash_to_newline(L("Adept ") + string(obj_controller.adept_name)), 0.6, 0.6, 0);
+        }
+
+        draw_set_font(fnt_40k_14);
+        draw_set_alpha(1);
+        draw_set_color(c_gray);
+        if (temp[36] != "0") {
+            blurp = LF("Sir!  You requested a report?  Currently, we have deployed {0} {1}s to watch over the health of our Battle-Brothers in the field.  We have an additional {2} {3}s who await only your order to carry the word to the troops.", [temp[36], L(obj_ini.role[100][14]), temp[37], L(obj_ini.role[100][14])]);
+        }
+        if (temp[36] == "0") {
+            blurp = LF("Sir!  You requested a report?  Currently, we have {0} {1}s who await only your order to carry the word to the troops.", [temp[37], L(obj_ini.role[100][14])]);
+        }
+        if ((global.chapter_name != "Space Wolves") && (global.chapter_name != "Iron Hands")) {
+            blurp += L("##Currently, we are training additional ") + L(obj_ini.role[100][14]) + L(" at a ");
+            var _recruit_rates = global.recruitment_rates;
+            blurp += L(_recruit_rates[training_chaplain]);
+            if (training_chaplain > 0 && training_chaplain <= 6) {
+                var training_points_values = global.chaplain_training_tiers;
+                eta = floor((47 - chaplain_points) / training_points_values[training_chaplain]) + 1;
+            }
+            blurp += L(" rate");
+            if (training_chaplain > 0) {
+                blurp += LF(" and expect to see a new one in {0} month's time.", [eta]);
+            }
+            if (training_chaplain < 5) {
+                blurp += L("We can increase this rate, but it will require us to requisition additional facilities, as well as upkeep, Sir.");
+            }
+            if (penitorium == 0) {
+                blurp += L("##Our men have been behaving as they should.  Not a single one is scheduled for corrective action of any type.");
+            }
+
+            draw_set_font(fnt_40k_30b);
+            draw_set_halign(fa_center);
+            draw_text_transformed(xx + 1262, yy + 70, L("Penitorium"), 0.6, 0.6, 0);
+
+            if (penitorium > 0) {
+                draw_set_font(fnt_40k_14);
+                draw_set_halign(fa_left);
+
+                for (var qp = 1; qp <= min(36, penitorium); qp++) {
+                    var unit = fetch_unit([penit_co[qp], penit_id[qp]]);
+                    if (!is_struct(unit)) {
+                        continue;
+                    }
+                    var r_eta = "";
+                    if (unit.corruption > 0) {
+                        r_eta = string(round((unit.corruption * unit.corruption) / 50));
+                        if (unit.corruption >= 90) {
+                            r_eta = "Never";
+                        }
+                    } else if (unit.corruption <= 0) {
+                        r_eta = "0";
+                    }
+                    draw_rectangle(xx + 947, yy + 100 + ((qp - 1) * 20), xx + 1577, yy + 100 + (qp * 20), 1);
+                    draw_text(xx + 950, yy + 100 + ((qp - 1) * 20), string_hash_to_newline(unit.name_role()));
+                    draw_text(xx + 1200, yy + 100 + ((qp - 1) * 20), string_hash_to_newline(L("ETA: ") + r_eta));
+                    draw_text(xx + 1432, yy + 100 + ((qp - 1) * 20), string_hash_to_newline(L("[Execute]  [Release]")));
+                }
+            }
+            draw_set_font(fnt_40k_14);
+        }
+
+        draw_set_font(fnt_40k_14);
+        draw_set_alpha(1);
+        draw_set_color(c_gray);
+
+        if (menu_adept == 1) {
+            blurp = LF("Your Chapter contains {0} {1}s.##", [temp[36], L(obj_ini.role[100][14])]);
+            if ((global.chapter_name != "Space Wolves") && (global.chapter_name != "Iron Hands")) {
+                blurp += L("Training of further ") + L(obj_ini.role[100][14]) + L("s");
+                if (training_chaplain >= 0 && training_chaplain <= 6) {
+                    var _recruit_pace = global.recruitment_pace_descriptions;
+                    blurp += L(_recruit_pace[training_chaplain]);
+                }
+                if (training_chaplain > 0) {
+                    blurp += L("  The next ") + L(obj_ini.role[100][14]) + L(" is expected in ") + string(eta) + L(" months.");
+                }
+            }
+        }
+
+        draw_set_halign(fa_left);
+        draw_text_ext_transformed(xx + 336 + 16, yy + 152, string_hash_to_newline(string(blurp)), -1, 536, 0.85, 0.85, 0);
+
+        draw_set_halign(fa_center);
+        draw_set_color(c_gray);
+        draw_set_font(fnt_40k_30b);
+        draw_text_transformed(xx + 622, yy + 440, string_hash_to_newline(L("Chapter Revelry")), 0.6, 0.6, 0);
+        draw_set_halign(fa_left);
+        draw_set_color(c_gray);
+        draw_set_font(fnt_40k_14);
+
+        var blurp2 = "";
+        // TODO rename fest_type and fest_scheduled into feast_type and feast_schedule and refactor scripts
+        if (menu_adept == 0) {
+            if (fest_scheduled == 0) {
+                if ((global.chapter_name != "Space Wolves") && (global.chapter_name != "Iron Hands")) {
+                    blurp2 = L("As our bolters are charged with death for the Emperor's enemies, our thoughts are charged with his wisdom.  As our bodies are armoured with Adamantium, our souls are protected with our loyalty- loyalty to Him, and loyalty to our brothers.  The bonds of this brotherhood are worth revering, even if a lull in duty invites doubt and heresy.  Should you wish to schedule a rousing event, or challenge, I will make it so.  Under the careful watch of our ") + L(obj_ini.role[100][14]) + L("s, our brothers' spirits may be lifted.");
+                }
+                if (global.chapter_name == "Space Wolves") {
+                    blurp2 = "";
+                }
+                if (global.chapter_name == "Iron Hands") {
+                    blurp2 = "";
+                }
+            }
+            if (fest_scheduled == 1) {
+                if (fest_type != "Chapter Relic") {
+                    blurp2 = LF("A {0} has been scheduled on ", [L(fest_type)]);
+                }
+                if (fest_type == "Chapter Relic") {
+                    blurp2 = L("Chapter Relic construction has been scheduled on ");
+                }
+
+                if (fest_planet == 0) {
+                    blurp2 += string(obj_ini.ship[fest_sid]);
+                }
+                if (fest_planet > 0) {
+                    blurp2 += string(fest_star) + " " + scr_roman(fest_wid);
+                }
+
+                if (fest_honoring == 0) {
+                    blurp2 += L(".  ");
+                }
+                if (fest_honoring == 1) {
+                    blurp2 += L(" in your name.  ");
+                }
+                // Specific company
+                if (fest_honoring == 2) {
+                    blurp2 += L(" in honor of the ");
+                }
+                if (fest_honoring == 3) {
+                    blurp2 += L(" in honor of ");
+                    blurp2 += L(obj_ini.role[fest_honor_co][fest_honor_id]) + " ";
+                    blurp2 += string(obj_ini.name[fest_honor_co][fest_honor_id]) + LF(" ({0} Company).  ", [romanNumerals[fest_honor_co]]);
+                }
+                if (fest_honoring == 4) {
+                    // faction
+                    blurp2 += L(", honoring ");
+                }
+                if (fest_honoring == 5) {
+                    blurp2 += L(", giving praise to The Emperor.  ");
+                }
+                if (fest_honoring == 6) {
+                    blurp2 += L(" to honor our chapter.  ");
+                }
+
+                if (fest_lav <= 1) {
+                    blurp2 += L("Very little requisiton has been set aside for the event");
+                }
+                if (fest_lav == 2) {
+                    blurp2 += L("A minor amount of requisition has been dedicated for the event");
+                }
+                if (fest_lav == 3) {
+                    blurp2 += L("Moderate expenses are being made for the event");
+                }
+                if (fest_lav == 4) {
+                    blurp2 += L("A great amount of requisiton is set aside for the event");
+                }
+                if (fest_lav == 5) {
+                    blurp2 += L("The event is set to be lavish and excessive, with maximum requisition spent");
+                }
+
+                if (fest_repeats <= 1) {
+                    blurp2 += LF(".  It is set to run for {0} month.", [fest_repeats]);
+                }
+                if (fest_repeats > 1) {
+                    blurp2 += LF(".  It is set to run for {0} months.", [fest_repeats]);
+                }
+
+                if (fest_type == "Great Feast") {
+                    if ((fest_feature1 == 1) && (fest_feature2 + fest_feature3 == 0)) {
+                        blurp2 += L("  The feast will be made up entirely of a banquet.");
+                    }
+                    if ((fest_feature1 == 1) && (fest_feature2 + fest_feature3 > 0)) {
+                        blurp2 += L("  The feast will primarily be made up of a banquet, although ");
+                        if (fest_feature2 + fest_feature3 == 2) {
+                            blurp2 += L("drugs and alcohol will be present for those who wish to partake.");
+                        }
+                        if ((fest_feature2 == 1) && (fest_feature3 == 0)) {
+                            blurp2 += L("alcohol will also be present.");
+                        }
+                        if ((fest_feature2 == 0) && (fest_feature3 == 1)) {
+                            blurp2 += L("drugs will also be present.");
+                        }
+                    }
+                    if (fest_feature1 == 0) {
+                        if ((fest_feature2 == 1) && (fest_feature3 == 0)) {
+                            blurp2 = L("  The feast will only be such in name, and actually primarily be composed of alcohol consumption and roudy behavior.");
+                        }
+                        if ((fest_feature2 == 0) && (fest_feature3 == 1)) {
+                            blurp2 = L("  The feast will only be such in name, and actually primarily be composed of lines of drugs and roudy behavior.");
+                        }
+                    }
+                }
+                if (fest_type == "Tournament") {
+                    if (fest_feature3 == 1) {
+                        blurp2 += L("  Other Chapters have been invited to partake in the event, although it is not known who, if any, might show.");
+                    }
+                    if (fest_feature2 == 1) {
+                        blurp2 += L("  Spectators are encouraged, with efforts made to keep attending simple.");
+                    }
+                }
+                if (fest_type == "Deathmatch") {
+                    if (fest_feature2 == 1) {
+                        blurp2 += "  Spectators are encouraged, with efforts made to keep attending simple.";
+                    }
+                    if (fest_feature3 == 1) {
+                        blurp2 += L("  Smaller, similar deathmatches will be held for Imperial citizens who wish to partake.");
+                    }
+                }
+                if (fest_type == "Chapter Relic") {
+                    if (fest_feature1 == 1) {
+                        blurp2 += L("  Our ") + L(obj_ini.role[100][16]) + L("s aim to create a weapon.");
+                    }
+                    if (fest_feature2 == 1) {
+                        blurp2 += L("  Our ") + L(obj_ini.role[100][16]) + L("s aim to create a suit of armour.");
+                    }
+                    if (fest_feature3 == 1) {
+                        blurp2 += L("  Our ") + L(obj_ini.role[100][16]) + L("s aim to hone and strengthen an already existing relic.");
+                    }
+                }
+                if (fest_type == "Imperial Mass") {
+                    if (fest_feature2 == 1) {
+                        blurp2 += L("  An Ecclesiarchy priest has been requested to lead the sermons.");
+                    }
+                    if (fest_feature3 == 1) {
+                        blurp2 += L("  Adepta Sororita presence has been requested, to share in praising the Emperor.");
+                    }
+                }
+                if (fest_type == "Chapter Sermon") {
+                    if ((fest_feature1 == 1) && (fest_feature2 + fest_feature3 == 0)) {
+                        blurp2 += L("  The Chapter Cult Sermon is pointedly sanctioned within the bounds of the Codex Astartes and Imperial tradition.");
+                    }
+                    if ((fest_feature1 == 0) && (fest_feature2 + fest_feature3 == 0)) {
+                        blurp2 += L("  The Chapter Cult Sermon contains some radical or questionable practices, but such is allowed, as our traditions.");
+                    }
+                    if (fest_feature2 == 1) {
+                        blurp2 += L("  Blood sacrifices are a primary focus with the sermon, celebrating martial prowess and our semi-divinity.");
+                    }
+                    if ((fest_feature2 > 0) && (fest_feature3 == 1)) {
+                        blurp2 += L("  Drugs will also be present for the ceremony.");
+                    }
+                    if ((fest_feature2 == 0) && (fest_feature3 > 1)) {
+                        blurp2 += L("  Mind-altering drugs will be a primary focus of the sermon.");
+                    }
+                }
+                if (fest_type == "Triumphal March") {
+                    if (fest_feature1 == 1) {
+                        blurp2 += L("  Local Imperials will be required to attend our march- those that attempt to avoid our revelry are clearly heretics and will be dealt with as such.");
+                    }
+                    if (fest_feature2 == 1) {
+                        blurp2 += L("  Cadences and battle cries will honor our closest allies, giving them due credit where it is needed.");
+                    }
+                    if (fest_feature3 == 1) {
+                        blurp2 += L("  Bloody trophies of our conquests will be brandished to the populance.");
+                    }
+                }
+            }
+        }
+
+        draw_text_ext(xx + 336 + 16, yy + 477, string_hash_to_newline(string(blurp2)), -1, 536);
+
+        draw_set_alpha(1);
+        draw_set_font(fnt_40k_14);
+    }
+
+    // ** Festivals **
+    if (menu == eMENU.FESTIVAL) {
+        var _checkbox_sprite_index = 0;
+        draw_set_font(fnt_40k_14b);
+        draw_set_color(c_gray);
+        draw_text_transformed(xx + 1262, yy + 70, L("Scheduling Event"), 0.6, 0.6, 0);
+        draw_text_transformed(xx + 962, yy + 126, string_hash_to_newline(L("Event Type: ")), 1, 1, 0);
+        draw_text_transformed(xx + 962, yy + 185, string_hash_to_newline(L("Event Location: ")), 1, 1, 0);
+        draw_text_transformed(xx + 962, yy + 266, string_hash_to_newline(L("Grandoise: ")), 1, 1, 0);
+        draw_text_transformed(xx + 962, yy + 324, string_hash_to_newline(L("Features: ")), 1, 1, 0);
+        draw_text_transformed(xx + 962, yy + 379, string_hash_to_newline(L("Display: ")), 1, 1, 0);
+
+        draw_text_transformed(xx + 962, yy + 434, string_hash_to_newline(L("Repeat: ")), 1, 1, 0);
+        draw_text_transformed(xx + 1225, yy + 434, string_hash_to_newline(L("Honoring: ")), 1, 1, 0);
+
+        draw_text_transformed(xx + 962, yy + 527, string_hash_to_newline(L("Attendees: ")), 1, 1, 0);
+        draw_text_transformed(xx + 1246, yy + 527, string_hash_to_newline(L("Public: ")), 1, 1, 0);
+
+        draw_set_font(fnt_40k_14);
+
+        // Attendees
+        if (fest_attend != "") {
+            draw_text_ext(xx + 962, yy + 550, string_hash_to_newline(string(fest_attend)), -1, 612);
+        }
+
+        // Location type
+        if (fest_planet != 1) {
+            _checkbox_sprite_index = 1;
+        }
+        if (fest_planet == 1) {
+            _checkbox_sprite_index = 2;
+        }
+
+        var cx = xx + 990;
+        var cy = yy + 212;
+
+        draw_text(cx, cy, string_hash_to_newline(L("Planet")));
+
+        cx -= 35;
+        cy -= 4;
+
+        draw_sprite(spr_creation_check, _checkbox_sprite_index + 1, cx, cy);
+        draw_set_alpha(1);
+        if ((scr_hit(cx, cy, cx + 32, cy + 32) == true) && mouse_button_clicked() && (dropdown_open == 0)) {
+            var onceh = 0;
+            if ((onceh == 0) && (fest_planet == 0)) {
+                onceh = 1;
+                fest_planet = 1;
+                fest_sid = 0;
+                fest_wid = 0;
+                fest_star = "";
+                with (obj_dropdown_sel) {
+                    if (target == "event_loc") {
+                        option[1] = "";
+                    }
+                }
+            }
+        }
+        if (fest_planet == 1) {
+            _checkbox_sprite_index = 1;
+        }
+        if (fest_planet == 0) {
+            _checkbox_sprite_index = 2;
+        }
+        if (fest_type == "Triumphal March") {
+            draw_set_alpha(0.5);
+        }
+
+        cx = xx + 1100;
+        cy = yy + 212;
+
+        draw_text(cx, cy, string_hash_to_newline(L("Ship")));
+
+        cx -= 35;
+        cy -= 4;
+
+        draw_sprite(spr_creation_check, _checkbox_sprite_index + 1, cx, cy);
+        draw_set_alpha(1);
+
+        if ((scr_hit(cx, cy, cx + 32, cy + 32) == true) && mouse_button_clicked() && (dropdown_open == 0)) {
+            var onceh = 0;
+            if ((onceh == 0) && (fest_planet == 1) && (fest_type != "Triumphal March")) {
+                onceh = 1;
+                fest_planet = 0;
+                fest_sid = 0;
+                fest_wid = 0;
+                fest_star = "";
+                with (obj_dropdown_sel) {
+                    if (target == "event_loc") {
+                        option[1] = "";
+                    }
+                }
+            }
+        }
+        draw_set_alpha(1);
+
+        // Features
+        var fet_text = "", fet_scale = 1;
+
+        if (fest_type == "Great Feast") {
+            fet_text = "Banquet";
+        }
+        if (fest_type == "Tournament") {
+            fet_text = "Internal";
+        }
+        if (fest_type == "Deathmatch") {
+            fet_text = "Chapter Only";
+        }
+        if (fest_type == "Chapter Relic") {
+            fet_text = "Create Wargear";
+        }
+        if (fest_type == "Chapter Sermon") {
+            fet_text = "Sanctioned";
+        }
+        if (fest_type == "Imperial Mass") {
+            fet_text = "Local";
+            fet_scale = 1;
+        }
+        if (fest_type == "Triumphal March") {
+            fet_text = "Mandatory Attendance";
+            fet_scale = 0.7;
+        }
+
+        if (fest_feature1 == 0) {
+            _checkbox_sprite_index = 1;
+        }
+        if (fest_feature1 == 1) {
+            _checkbox_sprite_index = 2;
+        }
+
+        cx = xx + 1090;
+        cy = yy + 326;
+
+        draw_text_transformed(cx, cy, string_hash_to_newline(string(fet_text)), fet_scale, 1, 0);
+
+        cx -= 35;
+        cy -= 4;
+
+        draw_sprite(spr_creation_check, _checkbox_sprite_index + 1, cx, cy);
+        draw_set_alpha(1);
+        if ((scr_hit(cx, cy, cx + 32, cy + 32) == true) && mouse_button_clicked() && (dropdown_open == 0)) {
+            var onceh = 0;
+            if ((fest_type == "Tournament") || (fest_type == "Deathmatch")) {
+                onceh = 1;
+            }
+            if ((onceh == 0) && (fest_feature1 == 0)) {
+                onceh = 1;
+                fest_feature1 = 1;
+            }
+            if ((onceh == 0) && (fest_feature1 == 1) && (fest_type != "Chapter Relic")) {
+                onceh = 1;
+                fest_feature1 = 0;
+            }
+            if ((fest_type == "Chapter Relic") && (fest_feature1 == 1)) {
+                fest_feature3 = 0;
+                fest_feature2 = 0;
+            }
+        }
+        if ((fest_type == "Tournament" || fest_type == "Deathmatch") && (fest_feature1 == 0)) {
+            fest_feature1 = 1;
+        }
+
+        if (fest_type == "Great Feast") {
+            fet_text = "Alcohol";
+        }
+        if (fest_type == "Tournament") {
+            fet_text = "Spectators";
+        }
+        if (fest_type == "Deathmatch") {
+            fet_text = "Spectators";
+        }
+        if (fest_type == "Chapter Relic") {
+            fet_text = "Create Armour";
+        }
+        if (fest_type == "Imperial Mass") {
+            fet_text = "Request Ecclesiarchy";
+            fet_scale = 0.75;
+        }
+        if (fest_type == "Chapter Sermon") {
+            fet_text = "Blood Sacrifices";
+            fet_scale = 0.75;
+        }
+        if (fest_type == "Triumphal March") {
+            fet_text = "Honor to Allies";
+            fet_scale = 0.75;
+        }
+
+        if (fest_feature2 == 0) {
+            _checkbox_sprite_index = 1;
+        }
+        if (fest_feature2 == 1) {
+            _checkbox_sprite_index = 2;
+        }
+        if ((fest_type == "Imperial Mass") && (known[5] == 0)) {
+            draw_set_alpha(0.5);
+        }
+
+        cx = xx + 1250;
+        cy = yy + 326;
+
+        draw_text_transformed(cx, cy, string_hash_to_newline(string(fet_text)), fet_scale, 1, 0);
+        cx -= 35;
+        cy -= 4;
+        draw_sprite(spr_creation_check, _checkbox_sprite_index + 1, cx, cy);
+        draw_set_alpha(1);
+        if ((scr_hit(cx, cy, cx + 32, cy + 32) == true) && mouse_button_clicked() && (dropdown_open == 0)) {
+            var onceh = 0;
+            if ((fest_type == "Imperial Mass") && (known[5] == 0)) {
+                onceh = 1;
+            }
+            if ((onceh == 0) && (fest_feature2 == 0)) {
+                onceh = 1;
+                fest_feature2 = 1;
+            }
+            if ((onceh == 0) && (fest_feature2 == 1) && (fest_type != "Chapter Relic")) {
+                onceh = 1;
+                fest_feature2 = 0;
+            }
+            if ((fest_type == "Chapter Relic") && (fest_feature2 == 1)) {
+                fest_feature1 = 0;
+                fest_feature3 = 0;
+            }
+        }
+
+        if (fest_type == "Great Feast") {
+            fet_text = "Drugs";
+        }
+        if (fest_type == "Chapter Relic") {
+            fet_text = "Upgrade Existing";
+        }
+        if (fest_type == "Chapter Sermon") {
+            fet_text = "Drugs";
+        }
+        if (fest_type == "Tournament") {
+            fet_text = "Invite Other Chapters";
+            fet_scale = 0.75;
+        }
+        if (fest_type == "Deathmatch") {
+            fet_text = "Allow Other Competitors";
+            fet_scale = 0.7;
+        }
+        if (fest_type == "Imperial Mass") {
+            fet_text = "Request Sororitas";
+            fet_scale = 0.75;
+        }
+        if (fest_type == "Triumphal March") {
+            fet_text = "Brandish Bloody Trophies";
+            fet_scale = 0.6;
+        }
+
+        if (fest_feature3 == 0) {
+            _checkbox_sprite_index = 1;
+        }
+        if (fest_feature3 == 1) {
+            _checkbox_sprite_index = 2;
+        }
+        if ((fest_type == "Imperial Mass") && (known[5] == 0)) {
+            draw_set_alpha(0.5);
+        }
+
+        cx = xx + 1388 + 22;
+        cy = yy + 326;
+
+        draw_text_transformed(cx, cy, string_hash_to_newline(string(fet_text)), fet_scale, 1, 0);
+        cx -= 35;
+        cy -= 4;
+        draw_sprite(spr_creation_check, _checkbox_sprite_index + 1, cx, cy);
+        draw_set_alpha(1);
+        if ((scr_hit(cx, cy, cx + 32, cy + 32) == true) && mouse_button_clicked() && (dropdown_open == 0)) {
+            var onceh = 0;
+            if ((fest_type == "Imperial Mass") && (known[5] == 0)) {
+                onceh = 1;
+            }
+            if ((onceh == 0) && (fest_feature3 == 0)) {
+                onceh = 1;
+                fest_feature3 = 1;
+            }
+            if ((onceh == 0) && (fest_feature3 == 1) && (fest_type != "Chapter Relic")) {
+                onceh = 1;
+                fest_feature3 = 0;
+            }
+            if ((fest_type == "Chapter Relic") && (fest_feature3 == 1)) {
+                fest_feature1 = 0;
+                fest_feature2 = 0;
+            }
+        }
+
+        // Always at least one feature
+        if ((fest_type != "Triumphal March") && (fest_type != "Chapter Sermon")) {
+            if ((fest_feature1 == 0) && (fest_feature2 == 0) && (fest_feature3 == 0)) {
+                fest_feature1 = 1;
+            }
+        }
+
+        // TODO Attendants
+        if ((fest_attend == "") && ((fest_wid > 0) || (fest_sid > 0))) {
+            // determine attendants
+        }
+
+        draw_set_font(fnt_40k_14);
+
+        var doable = true;
+        if (requisition < fest_cost) {
+            doable = false;
+        }
+        if ((fest_wid == 0) && (fest_sid == 0)) {
+            doable = false;
+        }
+
+        // Accept
+        draw_set_halign(fa_left);
+        draw_set_alpha(1);
+        draw_set_color(c_gray);
+
+        if (doable == false) {
+            draw_set_alpha(0.5);
+        }
+
+        draw_rectangle(xx + 1302, yy + 780, xx + 1433, yy + 805, 0);
+        draw_set_alpha(1);
+        draw_set_color(c_black);
+        draw_text(xx + 1305, yy + 784, string_hash_to_newline(L("Schedule")));
+
+        draw_sprite_ext(spr_requisition, 0, xx + 1374, yy + 787, 1, 1, 0, c_white, 1);
+        draw_set_color(c_blue);
+
+        if (requisition < fest_cost) {
+            draw_set_color(c_red);
+        }
+        draw_text(xx + 1388, yy + 784, string_hash_to_newline(string(fest_cost)));
+        if ((scr_hit(xx + 1302, yy + 780, xx + 1423, yy + 805) == true) && (doable == true)) {
+            draw_set_color(c_white);
+            draw_set_alpha(0.2);
+            draw_rectangle(xx + 1302, yy + 780, xx + 1433, yy + 805, 0);
+
+            if (mouse_button_clicked()) {
+                requisition -= fest_cost;
+                fest_scheduled = 1;
+                menu = eMENU.RECLUSIAM;
+                with (obj_dropdown_sel) {
+                    instance_destroy();
+                }
+                if (fest_repeats == 0) {
+                    fest_repeats = 1;
+                }
+            }
+        }
+
+        // Cancel
+        draw_set_halign(fa_center);
+        draw_set_alpha(1);
+        draw_set_color(c_gray);
+        draw_rectangle(xx + 1132, yy + 780, xx + 1253, yy + 805, 0);
+        draw_set_color(c_black);
+        draw_text(xx + 1192, yy + 783, string_hash_to_newline(L("Cancel")));
+        if (scr_hit(xx + 1132, yy + 780, xx + 1253, yy + 805) == true) {
+            draw_set_color(c_white);
+            draw_set_alpha(0.2);
+            draw_rectangle(xx + 1132, yy + 780, xx + 1253, yy + 805, 0);
+            if (mouse_button_clicked()) {
+                fest_type = "";
+                fest_sid = 0;
+                fest_wid = 0;
+                fest_planet = 0;
+                fest_star = "";
+                fest_lav = 0;
+                fest_locals = 0;
+                fest_feature1 = 0;
+                fest_feature2 = 0;
+                fest_attend = "";
+                fest_feature3 = 0;
+                fest_display = -1;
+                fest_repeats = 0;
+                fest_warp = 0;
+                menu = eMENU.RECLUSIAM;
+                with (obj_dropdown_sel) {
+                    instance_destroy();
+                }
+            }
+        }
+        draw_set_halign(fa_left);
+        draw_set_alpha(1);
+    }
+
+    // ** Chapter Master **
+    if (menu == eMENU.CHAPTER_MASTER) {
+        draw_set_color(0);
+        draw_sprite(spr_rock_bg, 0, xx, yy);
+        draw_sprite(spr_master_splash, 0, xx, yy);
+
+        draw_rectangle(xx + 213, yy + 25, xx + 622, yy + 78, 0);
+
+        draw_set_halign(fa_center);
+        draw_set_color(CM_GREEN_COLOR);
+        draw_line(xx + 213, yy, xx + 213, yy + 640);
+        draw_rectangle(xx + 213, yy + 25, xx + 622, yy + 78, 1);
+
+        draw_set_color(0);
+        draw_rectangle(xx + 217, yy + 82, xx + 617, yy + 188, 0);
+        draw_rectangle(xx + 217, yy + 199, xx + 617, yy + 367, 0);
+        draw_rectangle(xx + 217, yy + 380, xx + 617, yy + 411, 0);
+
+        draw_set_color(CM_GREEN_COLOR);
+        draw_rectangle(xx + 217, yy + 82, xx + 617, yy + 188, 1);
+        draw_rectangle(xx + 217, yy + 199, xx + 617, yy + 367, 1);
+        draw_rectangle(xx + 217, yy + 380, xx + 617, yy + 411, 1);
+
+        draw_set_font(fnt_large);
+        draw_text_transformed(xx + 410, yy + 29, obj_ini.role[100][eROLE.CHAPTERMASTER], 0.5, 0.5, 0);
+
+        draw_set_font(fnt_fancy);
+        draw_text_transformed(xx + 410, yy + 40, string_hash_to_newline(string(obj_ini.master_name)), 1.5, 1.5, 0);
+        draw_set_font(fnt_small);
+        draw_set_halign(fa_left);
+
+        var eqp = "", tempe = "";
+
+        draw_text(xx + 222, yy + 83, L("Equipment:"));
+        draw_text(xx + 222.5, yy + 83.5, L("Equipment:"));
+
+        draw_set_font(fnt_tiny);
+        draw_text_ext(xx + 222, yy + 99, string_hash_to_newline(string(eqp)), -1, 396);
+
+        draw_set_font(fnt_small);
+        draw_text(xx + 222, yy + 200, L("Kills:"));
+        draw_text(xx + 222.5, yy + 200.5, L("Kills:"));
+
+        // draw_text_ext(xx + 222, yy + 216, string_hash_to_newline(string(tot_ki)), -1, 396);
+        var unit = fetch_unit([0, 1]);
+        if (is_struct(unit)) {
+            if (unit.ship_location == -1) {
+                draw_text(xx + 222, yy + 380, string_hash_to_newline(LF("Current Location: {0} {1}#Health: {2}%", [unit.location_string, unit.planet_location, unit.hp()])));
+            } else if (unit.ship_location > -1) {
+                draw_text(xx + 222, yy + 380, string_hash_to_newline(LF("Current Location: Onboard {0}#Health: {1}%", [obj_ini.ship[unit.ship_location], unit.hp()])));
+            }
+        }
+
+        draw_text(xx + 222.5, yy + 380.5, string_hash_to_newline(L("Current Location:#Health:")));
+
+        draw_sprite(spr_arrow, 0, xx + 217, yy + 32);
+    }
+
+    // ** Welcome Screens **
+    if (menu >= eMENU.WELCOME_SCREEN1 && menu <= eMENU.WELCOME_SCREEN4) {
+        draw_sprite(spr_welcome_bg, 0, xx, yy);
+        scr_image("advisor/splash", 1, xx + 16, yy + 16, 310, 828);
+        draw_set_halign(fa_left);
+        draw_set_color(0);
+        draw_set_font(fnt_40k_14);
+
+        if (menu == eMENU.WELCOME_SCREEN1) {
+            draw_text_ext(xx + 370, yy + 72, string_hash_to_newline(string(temp[65])), -1, 660);
+        }
+        if (menu == eMENU.WELCOME_SCREEN2) {
+            draw_text_ext(xx + 370, yy + 72, string_hash_to_newline(string(temp[66])), -1, 660);
+        }
+        if (menu == eMENU.WELCOME_SCREEN3) {
+            draw_text_ext(xx + 370, yy + 72, string_hash_to_newline(string(temp[67])), -1, 660);
+        }
+        if (menu == eMENU.WELCOME_SCREEN4) {
+            draw_text_ext(xx + 370, yy + 72, string_hash_to_newline(string(temp[68])), -1, 660);
+        }
+        draw_set_halign(fa_center);
+        draw_text(xx + 702, yy + 695, $"{menu - 2} {L("(Press Any Key)")}");
+        draw_set_halign(fa_left);
+    }
+
+    // ** Chapter Management **
+    if ((menu == eMENU.MANAGE) && (managing == 0)) {
+        draw_set_alpha(1);
+        draw_sprite(spr_rock_bg, 0, xx, yy);
+        draw_set_font(fnt_40k_30b);
+        draw_set_halign(fa_center);
+        draw_set_color(c_gray);
+        draw_text(xx + 800, yy + 74, $"{global.chapter_name} {L("Chapter Organization")}");
+    }
+}

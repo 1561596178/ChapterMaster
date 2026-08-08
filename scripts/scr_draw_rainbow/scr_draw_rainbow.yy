@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"scr_draw_rainbow",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"scr_draw_rainbow",
+  "parent":{
+    "name":"Interface",
+    "path":"folders/Scripts/Interface.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

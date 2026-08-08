@@ -1,0 +1,1126 @@
+﻿enum eTRIALS {
+    BLOODDUEL,
+    HUNTING,
+    SURVIVAL,
+    EXPOSURE,
+    KNOWLEDGE,
+    CHALLENGE,
+    APPRENTICESHIP,
+    NUM,
+}
+
+global.recruitment_pace_descriptions = [
+    " is currently halted",
+    " is advancing sluggishly",
+    " is advancing slowly",
+    " is advancing moderately fast",
+    " is advancing fast",
+    " is advancing frenetically",
+    " is advancing as fast as possible",
+];
+
+global.recruitment_rates_caps = [
+    "HALTED",
+    "SLUGGISH",
+    "SLOW",
+    "MODERATE",
+    "FAST",
+    "FRENETIC",
+    "MAXIMUM",
+];
+global.recruitment_rates = [
+    "halted",
+    "sluggish",
+    "slow",
+    "moderate",
+    "fast",
+    "frenetic",
+    "heretically fast",
+];
+
+global.neophyte_rates_caps = [
+    "HALTED",
+    "ONGOING",
+];
+global.neophyte_rates = [
+    "halted",
+    "ongoing",
+];
+global.apothecary_training_tiers = [
+    0,
+    0.8,
+    0.9,
+    1,
+    1.5,
+    2,
+    4,
+];
+global.chaplain_training_tiers = [
+    0,
+    0.8,
+    0.9,
+    1,
+    1.5,
+    2,
+    4,
+];
+global.techmarine_training_tiers = [
+    0,
+    1,
+    2,
+    4,
+    6,
+    10,
+    14,
+];
+
+function find_recruit_success_chance(local_apothecary_points, system, planet, ui = 0) {
+    var p_data = system.get_planet_data(planet);
+    var _recruit_world = p_data.get_features(eP_FEATURES.RECRUITING_WORLD)[0];
+    var _recruit_cost = _recruit_world.recruit_cost;
+
+    var recruit_type = scr_trial_data(obj_controller.recruit_trial);
+    var planet_type_recruit_chance = {
+        "Hive": 30,
+        "Temperate": 20,
+        "Feudal": 20,
+        "Forge": 15,
+        "Shrine": 15,
+        "Desert": 15,
+        "Ice": 15,
+        "Agri": 15,
+        "Death": 15,
+        "Lava": 15,
+    };
+    var recruit_chance = 0;
+    if (local_apothecary_points > 0) {
+        if (ui == 0) {
+            if (_recruit_cost > 0 && obj_controller.requisition >= (_recruit_cost * 2)) {
+                obj_controller.requisition -= _recruit_cost * 2;
+            } else {
+                _recruit_world.recruit_cost = 0;
+            }
+        }
+
+        if (p_data.at_war(0, 1, 1) && p_data.player_disposition < 0) {
+            recruit_chance = 3000;
+        } else if (p_data.at_war(0, 0, 0) && p_data.player_disposition < 0) {
+            recruit_chance = 2000;
+        } else if (p_data.player_disposition < -1000 && p_data.current_owner == eFACTION.PLAYER) {
+            recruit_chance = 1500 - _recruit_cost * 100;
+        } else {
+            var _frictious = p_data.at_war(0, 1, 1) && p_data.player_disposition <= 50;
+            var _disp_mod = -((_frictious ? 30 : 10) * p_data.player_disposition);
+            var _faction_disp_mod = !_frictious ? 2000 : 3000;
+            var _recruit_cost_mod = -_recruit_cost * 100;
+
+            recruit_chance = _disp_mod + _recruit_cost_mod + _faction_disp_mod;
+        }
+
+        if (_recruit_world.recruit_type == 1) {
+            recruit_chance = recruit_chance / 2;
+            if (recruit_chance < 300) {
+                recruit_chance = 300;
+            }
+            if (ui == 0) {
+                var droll = irandom(100);
+                if (scr_has_adv("Ambushers")) {
+                    droll = irandom(400);
+                }
+
+                if (droll == 0) {
+                    var _planet_name = p_data.name;
+                    scr_alert(#FF9900, "DIPLOMATIC DISASTER", $"Apothecaries at {_planet_name} has been spotted doing suspicious activities!", system.x, system.y);
+                    scr_event_log(#FF9900, $"Apothecaries at {_planet_name} has been spotted doing suspicious activities!", system.name);
+                    p_data.add_disposition(-25);
+                    if (p_data.current_owner != eFACTION.PLAYER) {
+                        obj_controller.disposition[p_data.current_owner] -= 5;
+                    }
+                }
+            }
+        }
+    }
+    var recruit_chance_total = 0;
+    if (struct_exists(planet_type_recruit_chance, p_data.planet_type)) {
+        recruit_chance_total = planet_type_recruit_chance[$ p_data.planet_type] + local_apothecary_points;
+        if (struct_exists(recruit_type, "recruit_count_modifier")) {
+            var modded = false;
+            var count_mod = recruit_type.recruit_count_modifier;
+            if (struct_exists(count_mod, "planets")) {
+                if (struct_exists(count_mod.planets, p_data.planet_type)) {
+                    recruit_chance_total *= count_mod.planets[$ p_data.planet_type];
+                    modded = true;
+                }
+            }
+            if (!modded && struct_exists(count_mod, "base")) {
+                recruit_chance_total *= count_mod.base;
+            }
+        }
+    }
+    var _success_chance = 0;
+    if (recruit_chance != 0) {
+        _success_chance = recruit_chance_total / recruit_chance;
+    }
+    return _success_chance;
+}
+
+function find_recruit_corruption(planet_type) {
+    var _recruit_corruption = 0;
+    var _trial_type = scr_trial_data(obj_controller.recruit_trial);
+    static _planet_types_data = {
+        // The first number is base, the second one is SD for gaussian distribution;
+        "Hive": {
+            corruption_bonus: [
+                15,
+                2,
+            ],
+        },
+        "Temperate": {
+            corruption_bonus: [
+                10,
+                2,
+            ],
+        },
+        "Feudal": {
+            corruption_bonus: [
+                10,
+                2,
+            ],
+        },
+        "Forge": {
+            corruption_bonus: [
+                5,
+                2,
+            ],
+        },
+        "Shrine": {
+            corruption_bonus: [
+                -10,
+                2,
+            ],
+        },
+        "Desert": {
+            corruption_bonus: [
+                5,
+                2,
+            ],
+        },
+        "Ice": {
+            corruption_bonus: [
+                5,
+                2,
+            ],
+        },
+        "Agri": {
+            corruption_bonus: [
+                5,
+                2,
+            ],
+        },
+        "Death": {
+            corruption_bonus: [
+                5,
+                2,
+            ],
+        },
+        "Lava": {
+            corruption_bonus: [
+                5,
+                2,
+            ],
+        },
+    };
+
+    if (struct_exists(_planet_types_data, planet_type)) {
+        var _planet_type_data = _planet_types_data[$ planet_type];
+        if (struct_exists(_planet_type_data, "corruption_bonus")) {
+            var _planet_corruption = _planet_type_data[$ "corruption_bonus"][0];
+            var _gauss_sd = _planet_type_data[$ "corruption_bonus"][1];
+            _planet_corruption = gauss(_planet_corruption, _gauss_sd);
+            _recruit_corruption += _planet_corruption;
+        }
+    }
+
+    if (struct_exists(_trial_type, "corruption_bonus")) {
+        var _trial_corruption = _trial_type[$ "corruption_bonus"][0];
+        var _gauss_sd = _trial_type[$ "corruption_bonus"][1];
+        _trial_corruption = gauss(_trial_corruption, _gauss_sd);
+        _recruit_corruption += _trial_corruption;
+    }
+
+    _recruit_corruption = floor(_recruit_corruption);
+    _recruit_corruption = max(0, _recruit_corruption);
+
+    return _recruit_corruption;
+}
+
+// to be run in teh scope of the PlanetData struct
+/// @self Struct.PlanetData
+function planet_training_sequence(local_apothecary_points) {
+    var thirdpop = max_population / 3;
+    var halfpop = max_population / 2;
+
+    if ((obj_controller.faction_status[eFACTION.IMPERIUM] != "War" && current_owner <= 5) || (obj_controller.faction_status[eFACTION.IMPERIUM] == "War")) {
+        var _planet_population = population;
+        if (large_population) {
+            _planet_population *= 1000000000;
+        }
+        if (_planet_population >= 50 && obj_controller.recruiting) {
+            // Commenting this for now, looks like debug code
+            //scr_alert("green","owner", "Recruitment is slowed due to lack of population on our recruitment worlds",0,0);
+            var recruit_type = scr_trial_data(obj_controller.recruit_trial);
+            if (!large_population) {
+                population -= 1;
+            }
+
+            var recruit_chance = 999;
+            var aspirant = 0;
+            var new_recruit_corruption = find_recruit_corruption(planet_type);
+            LOGGER.debug($"new_recruit_corruption: {new_recruit_corruption}");
+            var months_to_neo = 72;
+            var dista = 0;
+            var onceh = 0;
+
+            var _recruit_chance = find_recruit_success_chance(local_apothecary_points, system, planet);
+            aspirant = random(1) < _recruit_chance;
+
+            // if a planet type has less than half it's max pop, you get 20% less spacey marines
+            if (_planet_population <= halfpop) {
+                recruit_chance += 1.2;
+                // scr_alert("red", "owner", "The populations you attain aspirants from are less populant than required, chances of recruiting aspirants is 20% lower", 0, 0);
+            }
+
+            // This is the area has trial types that don't care about planet type
+            // xp is given in a latter if loop
+            if (struct_exists(recruit_type, "seed_waste")) {
+                if (obj_controller.recruiting > 0) {
+                    if (random(1) < recruit_type.seed_waste) {
+                        obj_controller.gene_seed--;
+                        //TODO make more informative
+                        scr_alert("red", "owner", "Blood Duels are efficient in time, but costly in risk with gene material. Gene-seed has been lost.", 0, 0);
+                    }
+                }
+            }
+            if (struct_exists(recruit_type, "train_time")) {
+                var train_time_data = recruit_type.train_time;
+                var chosen_time = false;
+                if (struct_exists(train_time_data, "planets")) {
+                    if (struct_exists(train_time_data.planets, planet_type)) {
+                        months_to_neo = irandom_range(train_time_data.planets[$ planet_type][0], train_time_data.planets[$ planet_type][1]);
+                        chosen_time = true;
+                    }
+                }
+                if (!chosen_time && struct_exists(train_time_data, "base")) {
+                    if (train_time_data.base[0] != 0 && train_time_data.base[1] != 0) {
+                        months_to_neo = irandom_range(train_time_data.base[0], train_time_data.base[1]);
+                    }
+                }
+            }
+            var new_recruit_exp = irandom(5);
+            if (struct_exists(recruit_type, "exp_bonus")) {
+                var chosen_exp = false;
+                var exp_bonus_data = recruit_type.exp_bonus;
+                if (struct_exists(exp_bonus_data, "planets")) {
+                    if (struct_exists(exp_bonus_data.planets, planet_type)) {
+                        new_recruit_exp += irandom_range(exp_bonus_data.planets[$ planet_type][0], exp_bonus_data.planets[$ planet_type][1]);
+                        chosen_exp = true;
+                    }
+                }
+                if (!chosen_exp && struct_exists(exp_bonus_data, "base")) {
+                    if (exp_bonus_data.base[0] != 0 && exp_bonus_data.base[1] != 0) {
+                        if (array_length(exp_bonus_data.base) > 2) {
+                            if (random(1) < exp_bonus_data.base[2]) {
+                                new_recruit_exp += irandom_range(exp_bonus_data.base[0], exp_bonus_data.base[1]);
+                            }
+                        } else {
+                            new_recruit_exp = irandom_range(exp_bonus_data.base[0], exp_bonus_data.base[1]);
+                        }
+                    }
+                }
+            }
+            //new_recruit_corruption
+
+            // xp gain for the recruit is here
+            // as well as planet type buffs or nerfs
+            if (aspirant) {
+                var new_recruit = 0;
+
+                // gets the next empty recruit space on the array
+                if (new_recruit_exp >= 40) {
+                    new_recruit_exp = 38;
+                } // we don't want immediate battle bros
+
+                for (var i = 0; i < array_length(obj_controller.recruit_training); i++) {
+                    if (obj_controller.recruit_training[i] < 1 || months_to_neo < obj_controller.recruit_training[i]) {
+                        obj_controller.gene_seed -= 1;
+                        array_insert(obj_controller.recruit_corruption, i, new_recruit_corruption);
+                        array_insert(obj_controller.recruit_distance, i, 0);
+                        array_insert(obj_controller.recruit_training, i, months_to_neo);
+                        array_insert(obj_controller.recruit_exp, i, new_recruit_exp);
+                        array_insert(obj_controller.recruit_name, i, global.name_generator.GenerateFromSet("space_marine"));
+                        array_insert(obj_controller.recruit_data, i, {"recruit_data": {recruit_world: planet_type, aspirant_trial: obj_controller.recruit_trial}});
+                        break;
+                    }
+                }
+            }
+            // End aspirant!=0
+        } // End pop>50
+    } // End recruiting possible
+}
+
+function scr_trial_data(wanted = -1) {
+    var role_data = instance_exists(obj_ini) ? obj_ini.role[100] : obj_creation.role[100];
+    var data = [
+        {
+            name: "Blood Duel",
+            train_time: {
+                base: [
+                    24,
+                    48,
+                ],
+            },
+            recruit_count_modifier: {
+                base: 0.3,
+            },
+            seed_waste: 0.1,
+            corruption_bonus: [
+                10,
+                2,
+            ],
+            long_description: $"THE BLOOD DUEL?  HA DO I EVEN NEED TO EXPLAIN, CHAPTER MASTER?  ASPIRANTS ENTER.  NEOPHYTES LEAVE.  Those worthy of serving the Emperor are rewarded justly and those merely pretending at glory are lost in the BLOOD AND THUNDER of the dome.  Do not be alarmed at the carnage.  The Apothecarium has become quite adept at rebuilding those fit to serve.  The others are given to the {role_data[eROLE.TECHMARINE]}s.  The mind is a terrible thing to waste and the Emperor does hate waste.  Not every man is useful as an Astartes but every man is useful.",
+        },
+        {
+            name: "Hunting the Hunter",
+            train_time: {
+                base: [
+                    72,
+                    80,
+                ],
+            },
+            exp_bonus: {
+                base: [
+                    0,
+                    0,
+                ],
+                planets: {
+                    Ice: [
+                        7,
+                        10,
+                    ],
+                    Desert: [
+                        7,
+                        10,
+                    ],
+                    Death: [
+                        7,
+                        10,
+                    ],
+                },
+            },
+            recruit_count_modifier: {
+                base: 1,
+                planets: {
+                    Ice: 2,
+                    Desert: 1.25,
+                    Death: 3,
+                    Feudal: 1.5,
+                },
+            },
+            long_description: $"To be an Astartes is to be a hunter of xenos, of traitors, of heretics, and of all those that dare defy the Emperor.  What better way to test the worthiness of Aspirants than to have to them hunt the most dangerous predator to be found on their planet?  Such a task requires a combination of wits and cunning, in addition to raw martial skill.  When they have received the blessed geneseed and become full battle brothers, they will hunt across the stars with bolter and chainsword. For now, let them hunt with nothing more than a spear and their wits.",
+        },
+        {
+            name: "Survival of the Fittest",
+            train_time: {
+                base: [
+                    72,
+                    80,
+                ],
+            },
+            recruit_count_modifier: {
+                base: 1.0,
+                planets: {
+                    Ice: 3,
+                    Desert: 3,
+                    Death: 3,
+                    Feudal: 3,
+                },
+            },
+            exp_bonus: {
+                base: [
+                    0,
+                    0,
+                ],
+            },
+            corruption_bonus: [
+                5,
+                1,
+            ],
+            long_description: $"To become one of the Imperium’s finest warriors, the Space Marines, is the greatest glory that any human can aspire to. And is glory not worth fighting, bleeding or even dying for? It must be, for whole worlds of ice, ash and sand have buried generations of sons in pursuit of this glory and never once called the price too dear.  To ensure the necessary bloodshed, lies, paranoia and psychosis-inducing drugs have been introduced to .  This trial will seperate the weak from the strong and the chaff from the wheat.",
+        },
+        {
+            name: "Exposure",
+            train_time: {
+                base: [
+                    72,
+                    80,
+                ],
+                planets: {
+                    Desert: [
+                        36,
+                        60,
+                    ],
+                    Ice: [
+                        36,
+                        60,
+                    ],
+                    Forge: [
+                        36,
+                        60,
+                    ],
+                    Lava: [
+                        36,
+                        60,
+                    ],
+                    Death: [
+                        36,
+                        60,
+                    ],
+                },
+            },
+            exp_bonus: {
+                base: [
+                    0,
+                    0,
+                ],
+                planets: {
+                    Ice: [
+                        2,
+                        4,
+                    ],
+                    Desert: [
+                        2,
+                        4,
+                    ],
+                    Death: [
+                        2,
+                        4,
+                    ],
+                },
+            },
+            recruit_count_modifier: {
+                base: 1.0,
+            },
+            long_description: $"Few worlds of the Imperium are free from the adversity of pollution or toxic waste.  Still others are bequeathed with flows of lava and choking atmosphere.  The glory of rising to astartes is only granted to those that can tackle and overcome these dangerous environments.  Aspirants are placed upon the most hellish of planet in the sector, and then expected to traverse the continent with only himself to rely upon.  Those who face the impossible without faltering and survive past the point they should have perished are recovered by {role_data[eROLE.APOTHECARY]}s, judged worthy of becoming a Neophyte.",
+        },
+        {
+            name: "Knowledge of self",
+            train_time: {
+                base: [
+                    90,
+                    108,
+                ],
+                planets: {
+                    Shrine: [
+                        70,
+                        108,
+                    ],
+                },
+            },
+            exp_bonus: {
+                base: [
+                    15,
+                    25,
+                ],
+                planets: {
+                    Temperate: [
+                        20,
+                        35,
+                    ],
+                },
+            },
+            recruit_count_modifier: {
+                base: 1.0,
+            },
+            corruption_bonus: [
+                -5,
+                1,
+            ],
+            long_description: $"An Aspirant’s spiritual and mental capability is every bit as important as his physical characteristics.  It is wise to impose Trials not upon their body, but on the mind.  Either through psychic powers, chemical agents, or endurance trials, the Aspirant’s willpower is tested.  Those unworthy do not survive the stress and trauma placed upon their hearts- only those whose minds are proven to be unbreakable are welcomed into our ranks.",
+        },
+        {
+            name: "Combat Challange",
+            train_time: {
+                base: [
+                    66,
+                    80,
+                ],
+                planets: {
+                    Shrine: [
+                        70,
+                        108,
+                    ],
+                },
+            },
+            exp_bonus: {
+                base: [
+                    10,
+                    20,
+                    0.2,
+                ],
+            },
+            corruption_bonus: [
+                5,
+                1,
+            ],
+            long_description: $"What better gauge of an Aspirant than in a duel with our astartes?  Our brother, unarmed and unarmoured, will face against the armed challenger until one cannot continue.  It is impossible for the Aspirant to actually succeed these trials, but demonstrates how far they can possibly go, and allow us to judge him accordingly.  As with most trials the Aspirant’s life is in their own hands.  He who has failed the duel- yet proven himself worthy- is rescued from the jaws of death by {role_data[eROLE.APOTHECARY]} and allowed to progress to the rank of Neophyte.",
+        },
+        {
+            name: "Apprenticeship",
+            train_time: {
+                base: [
+                    120,
+                    140,
+                ],
+                planets: {
+                    Shrine: [
+                        70,
+                        108,
+                    ],
+                },
+            },
+            exp_bonus: {
+                base: [
+                    35,
+                    40,
+                ],
+            },
+            recruit_count_modifier: {
+                base: 1,
+                planets: {
+                    Lava: 2,
+                },
+            },
+            corruption_bonus: [
+                -10,
+                1,
+            ],
+            long_description: $"What better way to cultivate astartes than to raise them from youth?  The capable children of our recruitment targets are apprenticed to our battle brothers.  Beneath their steady guidance the Aspirants spend several years learning the art of the smith.  The most able are judged by our Chapter’s {role_data[eROLE.APOTHECARY]}s and {role_data[eROLE.CHAPLAIN]} to deem if they are compatible with gene-seed implantation.  If so, the Aspirant’s trial culminates in hunting and slaying a massive beast.  Only the brightest and bravest are added to our ranks.",
+        },
+    ];
+    if (wanted > -1) {
+        var train_traits = find_favoured_training_traits(wanted);
+        data[wanted].favoured_traits = train_traits[1];
+        data[wanted].disfavoured_traits = train_traits[0];
+        return data[wanted];
+    } else {
+        for (var i = 0; i < array_length(data); i++) {
+            var train_traits = find_favoured_training_traits(i);
+            data[i].favoured_traits = train_traits[1];
+            data[i].disfavoured_traits = train_traits[0];
+            data[i].stat_diffs = train_traits[2];
+        }
+        return data;
+    }
+}
+
+function find_favoured_training_traits(training_enum) {
+    var _traits = global.astartes_trait_dist;
+    var _trait_data;
+    var disfavoured_traits = [];
+    var favoured_traits = [];
+    var _trait_id = "";
+    var stat_diffs = {};
+    var _stat_names = global.stat_list;
+    for (var i = 0; i < array_length(_stat_names); i++) {
+        stat_diffs[$ _stat_names[i]] = 0;
+    }
+
+    for (var i = 0; i < array_length(_traits); i++) {
+        _trait_data = _traits[i];
+        _trait_id = _trait_data[0];
+        if (array_length(_trait_data) < 3) {
+            continue;
+        }
+        var _trait_spawn_mods = _trait_data[2];
+        if (!is_struct(_trait_spawn_mods)) {
+            continue;
+        }
+
+        if (!struct_exists(_trait_spawn_mods, "recruit_trial")) {
+            continue;
+        }
+        var _trial_spawn_mods = _trait_spawn_mods.recruit_trial;
+        for (var s = 0; s < array_length(_trial_spawn_mods); s++) {
+            var _spawn_mod = _trial_spawn_mods[s];
+            if (_spawn_mod[0] == training_enum) {
+                var _trait_spawn_chance = _spawn_mod[1];
+                var _spawn_percent = (_trait_spawn_chance / _trait_data[1][0]) * -1;
+                if (bool(_trait_spawn_chance)) {
+                    array_push(disfavoured_traits, _trait_id);
+                } else {
+                    array_push(favoured_traits, _trait_id);
+                }
+                if (_spawn_percent != 0) {
+                    var _trait_stats = global.trait_list[$ _trait_id];
+                    for (var stat_i = 0; stat_i < array_length(_stat_names); stat_i++) {
+                        var stat = _stat_names[stat_i];
+                        if (struct_exists(_trait_stats, stat)) {
+                            var _stat_value = _trait_stats[$ stat];
+                            if (is_array(_stat_value)) {
+                                _stat_value = _stat_value[0];
+                            }
+                            stat_diffs[$ stat] += _stat_value * _spawn_percent;
+                        }
+                    }
+                }
+                break;
+            }
+        }
+    }
+    return [
+        disfavoured_traits,
+        favoured_traits,
+        stat_diffs,
+    ];
+}
+
+function scr_compile_trial_bonus_string(trial_data) {
+    var bonus_string = "";
+    var train_time_string = function(tarray) {
+        return $"{tarray[0] / 12} - {tarray[1] / 12}";
+    };
+    var exp_bonus_string = function(tarray) {
+        if (tarray[0] == 0 && tarray[1] == 0) {
+            tarray[1] = 5;
+        }
+        return $"{tarray[0]} - {tarray[1]}";
+    };
+    if (struct_exists(trial_data, "train_time")) {
+        var train_time_data = trial_data.train_time;
+        bonus_string += LF("Years training : {0}", [train_time_string(train_time_data.base)]) + "\n";
+        if (struct_exists(train_time_data, "planets")) {
+            var planets = struct_get_names(train_time_data.planets);
+            for (var i = 0; i < array_length(planets); i++) {
+                bonus_string += LF("   {0} : {1}", [L(planets[i]), train_time_string(train_time_data.planets[$ planets[i]])]) + "\n";
+            }
+        }
+        bonus_string += "\n";
+    }
+    if (struct_exists(trial_data, "recruit_count_modifier")) {
+        var recruit_count_data = trial_data.recruit_count_modifier;
+        bonus_string += LF("Recruit Success Chance : X{0}", [recruit_count_data.base]) + "\n";
+        if (struct_exists(recruit_count_data, "planets")) {
+            var planets = struct_get_names(recruit_count_data.planets);
+            for (var i = 0; i < array_length(planets); i++) {
+                bonus_string += LF("   {0} : X{1}", [L(planets[i]), recruit_count_data.planets[$ planets[i]]]) + "\n";
+            }
+        }
+        bonus_string += "\n";
+    }
+    if (struct_exists(trial_data, "exp_bonus")) {
+        var exp_bonus = trial_data.exp_bonus;
+        bonus_string += LF("Experience Bonus : {0}", [exp_bonus_string(exp_bonus.base)]) + "\n";
+        if (struct_exists(exp_bonus, "planets")) {
+            var planets = struct_get_names(exp_bonus.planets);
+            for (var i = 0; i < array_length(planets); i++) {
+                bonus_string += LF("   {0} : {1}", [L(planets[i]), exp_bonus_string(exp_bonus.planets[$ planets[i]])]) + "\n";
+            }
+        }
+        bonus_string += "\n";
+    }
+    if (struct_exists(trial_data, "seed_waste")) {
+        bonus_string += LF("{0}% of gene-seed wastage per turn", [trial_data.seed_waste * 100]) + "\n";
+        bonus_string += "\n";
+    }
+    if (struct_exists(trial_data, "corruption_bonus")) {
+        var corruption_bonus = trial_data[$ "corruption_bonus"];
+        bonus_string += LF("Corruption Effect : ~{0}", [corruption_bonus[0]]) + "\n";
+        /* if (struct_exists(corruption_bonus, "planets")){
+			var planets = struct_get_names(corruption_bonus.planets);
+			for (var i=0;i<array_length(planets);i++){
+				bonus_string += $"   {planets[i]} : {exp_bonus_string(corruption_bonus.planets[$ planets[i]])}\n";
+			}
+		} */
+        bonus_string += "\n";
+    }
+    var _traits = global.trait_list;
+    if (struct_exists(trial_data, "favoured_traits")) {
+        bonus_string += L("Favoured Traits: ");
+        for (var i = 0; i < array_length(trial_data.favoured_traits); i++) {
+            var _favoured_trait = trial_data.favoured_traits[i];
+            bonus_string += $"{L(_traits[$ _favoured_trait].display_name)}, ";
+        }
+        bonus_string += "\n\n";
+    }
+    if (struct_exists(trial_data, "disfavoured_traits")) {
+        bonus_string += L("Dis-Favoured Traits: ");
+        for (var i = 0; i < array_length(trial_data.disfavoured_traits); i++) {
+            var _disfavoured_trait = trial_data.disfavoured_traits[i];
+            bonus_string += $"{L(_traits[$ _disfavoured_trait].display_name)}, ";
+        }
+        bonus_string += "\n\n";
+    }
+    // if (struct_exists(trial_data,"stat_diffs")){
+    // 	bonus_string+=$"{trial_data.stat_diffs}\n";
+    // }
+    return bonus_string;
+}
+
+function StatDistributionUnit(data) constructor {
+    data_upper_end = 0;
+    data_lower_end = 0;
+    var _stat_names = global.stat_list;
+    for (var i = 0; i < array_length(_stat_names); i++) {
+        var _stat = _stat_names[i];
+        if (data[$ _stat] < data_lower_end) {
+            data_lower_end = data[$ _stat];
+        }
+        if (data[$ data_upper_end] > data_upper_end) {
+            data_lower_end = data[$ _stat];
+        }
+    }
+
+    //data_upper_end =
+    static draw = function() {};
+}
+
+function set_up_recruitment_view() {
+    with (obj_controller) {
+        menu = 15;
+        onceh = 1;
+        cooldown = 8000;
+        click = 1;
+        recruit_list_pane = new DataSlate();
+        recruit_list_pane.inside_method = function() {
+            var xx = camera_get_view_x(view_camera[0]);
+            var yy = camera_get_view_y(view_camera[0]) + 60;
+            draw_set_font(fnt_40k_30b);
+            draw_set_halign(fa_center);
+            draw_text_transformed(xx + 1242, yy + 70, L("Neophytes"), 0.6, 0.6, 0);
+
+            if (recruit_name[0] != "") {
+                draw_set_font(fnt_40k_14);
+                draw_set_halign(fa_left);
+
+                var t_eta = 0;
+                for (var qp = 0, n = 0; qp < array_length(recruit_name) && n < 36; qp++) {
+                    if (recruit_name[qp] != "") {
+                        n++;
+                        draw_rectangle(xx + 947, yy + 100 + ((n - 1) * 20), xx + 1577, yy + 100 + (n * 20), 1);
+                        draw_text(xx + 950, yy + 100 + ((n - 1) * 20), LF("Neophyte {0}", [recruit_name[qp]]));
+                        draw_text(xx + 1200, yy + 100 + ((n - 1) * 20), LF("Starting EXP: {0}", [recruit_exp[qp]]));
+                        draw_text(xx + 1500, yy + 100 + ((n - 1) * 20), LF("ETA: {0}", [recruit_training[qp] + recruit_distance[qp]]));
+                    }
+                }
+            }
+        };
+        left_panel = new DataSlate();
+        middle_panel = new DataSlate();
+    }
+}
+
+/// @self Asset.GMObject.obj_controller
+function scr_draw_recruit_advisor() {
+    var va;
+    var romanNumerals = scr_roman_numerals();
+    var _recruit_rate = global.recruitment_rates_caps;
+    var xx = camera_get_view_x(view_camera[0]);
+    var yy = camera_get_view_y(view_camera[0]);
+    var blurp = "";
+    var eta = 0;
+    draw_sprite(spr_rock_bg, 0, xx, yy);
+    draw_set_alpha(0.75);
+    draw_set_color(0);
+    draw_rectangle(xx + 326 + 16, yy + 66, xx + 887 + 16, yy + 818, 0);
+    draw_set_alpha(1);
+    draw_set_color(c_gray);
+    draw_rectangle(xx + 326 + 16, yy + 66, xx + 887 + 16, yy + 818, 1);
+    draw_line(xx + 326 + 16, yy + 480, xx + 887 + 16, yy + 480);
+    var lower_middle_box = [
+        xx + 326,
+        yy + 480,
+        xx + 887,
+        yy + 828,
+    ];
+    draw_set_alpha(0.75);
+    draw_set_color(0);
+    draw_rectangle(xx + 945, yy + 66, xx + 1580, yy + 818, 0);
+    draw_set_alpha(1);
+    draw_set_color(c_gray);
+    draw_rectangle(xx + 945, yy + 66, xx + 1580, yy + 818, 1);
+
+    if (menu_adept == 0) {
+        // draw_sprite(spr_advisors,5,xx+16,yy+43);
+        if (struct_exists(obj_ini.custom_advisors, "recruiter")) {
+            scr_image("advisor/splash", obj_ini.custom_advisors.recruiter, xx + 16, yy + 43, 310, 828);
+        } else {
+            scr_image("advisor/splash", 6, xx + 16, yy + 43, 310, 828);
+        }
+        draw_set_halign(fa_left);
+        draw_set_color(c_gray);
+        draw_set_font(fnt_40k_30b);
+        draw_text_transformed(xx + 336 + 16, yy + 66, string_hash_to_newline(L("World ") + string(obj_ini.recruiting_name)), 0.75, 0.75, 0);
+        draw_text_transformed(xx + 336 + 16, yy + 112, string_hash_to_newline(L("First Sergeant ") + string(recruiter_name)), 0.6, 0.6, 0);
+        draw_set_font(fnt_40k_14);
+    }
+    if (menu_adept == 1) {
+        // draw_sprite(spr_advisors,0,xx+16,yy+43);
+        scr_image("advisor/splash", 1, xx + 16, yy + 43, 310, 828);
+        draw_set_halign(fa_left);
+        draw_set_color(c_gray);
+        draw_set_font(fnt_40k_30b);
+        draw_text_transformed(xx + 336 + 16, yy + 40, string_hash_to_newline(L("World ") + string(obj_ini.recruiting_name)), 0.75, 0.75, 0);
+        draw_text_transformed(xx + 336 + 16, yy + 112, string_hash_to_newline(L("Adept ") + string(obj_controller.adept_name)), 0.6, 0.6, 0);
+        draw_set_font(fnt_40k_14);
+    }
+
+    if (menu_adept == 0) {
+        blurp = LF("Hail {0}! You asked for a report?\n\n", [obj_ini.name[0][0]]);
+    }
+
+    if (obj_ini.doomed == 0) {
+        if (recruits <= 0) {
+            if (marines >= 1000) {
+                blurp += L("Our Chapter currently has no Neophytes - we are at maximum strength and do not require more marines.");
+            }
+            if ((marines < 1000) && (recruiting == 0)) {
+                blurp += L("Our Chapter currently has no Neophytes. Without training more our chapter is doomed to a slow death.");
+            }
+            if ((marines < 1000) && (recruiting > 0)) {
+                blurp += L("Our Chapter currently has no Neophytes. We are doing our utmost best to find suitable recruits.");
+            }
+        } else if (recruits == 1) {
+            blurp += LF("Our Chapter currently has one recruit being trained. The Neophyte's name is {0} and they are scheduled to become a battle brother in {1} months' time.", [recruit_name[0], recruit_training[0] + recruit_distance[0]]);
+        } else if (recruits > 1) {
+            blurp += LF("Our Chapter currently has {0} recruits being trained. {1} is the next scheduled Neophyte to become a battle brother in {2} months' time.", [recruits, recruit_name[0], recruit_training[0] + recruit_distance[0]]);
+        }
+
+        if (gene_seed > 0) {
+            var _recruit_rates = global.neophyte_rates;
+            var _cur_recruit_rate = LF("The recruitment is {0}", [L(_recruit_rates[recruiting])]);
+            if ((recruiting == 0) && (marines >= 1000)) {
+                blurp += LF("\n{0}. You must only give me the word and I can begin further increasing our numbers... though this would violate the Codex Astartes.", [_cur_recruit_rate]);
+            } else if ((recruiting == 0) && (marines < 1000)) {
+                blurp += LF("\n{0}. You must only give me the word and I can begin further increasing our numbers.", [_cur_recruit_rate]);
+            } else if (recruiting == 1) {
+                blurp += "\n" + _cur_recruit_rate + ".";
+            }
+        }
+    }
+
+    if (obj_ini.doomed == 1) {
+        blurp += L("\nMutation of our gene-seed currently makes us unable to recruit new Neophytes. We are doomed to a slow demise unless the Apothecaries can fix it.");
+    }
+
+    if (gene_seed == 0) {
+        blurp += L("\nThere is no more gene-seed in our vaults and we cannot create more neophytes as a result. Something must be done, Chapter Master.");
+    }
+
+    if (recruiting > 0) {
+        if (string_count("|", obj_controller.recruiting_worlds) == 1) {
+            blurp += LF("\nWe're recruiting from one world - {0}.", [obj_ini.recruiting_name]);
+        } else if (string_count("|", obj_controller.recruiting_worlds) == 2) {
+            blurp += L("\nWe're recruiting from two worlds. Finding recruits is vastly accelerated.");
+        } else if (string_count("|", obj_controller.recruiting_worlds) > 2) {
+            blurp += L("\nWe're recruiting from several worlds.");
+        }
+    }
+
+    if (menu_adept == 1) {
+        blurp = string_replace(blurp, "Our", "Your");
+        blurp = string_replace(blurp, " our", " your");
+        blurp = string_replace(blurp, "We", "You");
+    }
+
+    draw_text_ext_transformed(xx + 336 + 16, yy + 152, string_hash_to_newline(string(blurp)), -1, 536, 0.85, 0.85, 0);
+
+    // draw_line(xx+216,yy+252,xx+597,yy+252);draw_line(xx+216,yy+292,xx+597,yy+292);
+
+    var _neophyte_rate = global.neophyte_rates_caps;
+    var blur = "", amo = 0;
+    // ** Normal recruiting **
+    draw_set_color(16291875);
+    draw_set_color(c_gray);
+    if ((recruiting >= 0) && (recruiting <= 1)) {
+        blur = _neophyte_rate[recruiting];
+    }
+    draw_text(xx + 407, yy + 354, string_hash_to_newline(L("Space Marine Recruiting: ") + L(blur)));
+    draw_text(xx + 728, yy + 354, string_hash_to_newline(L("[-] [+]")));
+
+    amo = 0;
+    // ** Apothecary recruitment **
+    draw_set_color(16291875);
+    if (training_apothecary == 1) {
+        amo = -1;
+    }
+    if (training_apothecary == 2) {
+        amo = -2;
+    }
+    if (training_apothecary == 3) {
+        amo = -3;
+    }
+    if (training_apothecary == 4) {
+        amo = -4;
+    }
+    if (training_apothecary == 5) {
+        amo = -6;
+    }
+    if (training_apothecary == 6) {
+        amo = -12;
+    }
+    if (amo != 0) {
+        draw_sprite(spr_requisition, 0, xx + 336 + 16, yy + 396);
+    }
+    if (training_apothecary != 0) {
+        draw_text(xx + 351 + 16, yy + 394, string_hash_to_newline(string(amo)));
+    }
+    draw_set_color(c_gray);
+    if ((training_apothecary >= 0) && (training_apothecary <= 6)) {
+        blur = _recruit_rate[training_apothecary];
+    }
+    draw_text(xx + 407, yy + 394, string_hash_to_newline(L("Apothecary Training: ") + L(blur)));
+    draw_text(xx + 728, yy + 394, string_hash_to_newline(L("[-] [+]")));
+
+    // TODO implement Spave Wolves and Iron Hands cases
+    if ((global.chapter_name != "Space Wolves") && (global.chapter_name != "Iron Hands")) {
+        // ** Chaplain recruitment **
+        amo = 0;
+        draw_set_color(16291875);
+        if (training_chaplain == 1) {
+            amo = -1;
+        }
+        if (training_chaplain == 2) {
+            amo = -2;
+        }
+        if (training_chaplain == 3) {
+            amo = -3;
+        }
+        if (training_chaplain == 4) {
+            amo = -4;
+        }
+        if (training_chaplain == 5) {
+            amo = -6;
+        }
+        if (training_chaplain == 6) {
+            amo = -12;
+        }
+        if (amo != 0) {
+            draw_sprite(spr_requisition, 0, xx + 336 + 16, yy + 416);
+        }
+        if (training_chaplain != 0) {
+            draw_text(xx + 351 + 16, yy + 414, string_hash_to_newline(string(amo)));
+        }
+        draw_set_color(c_gray);
+        if ((training_chaplain >= 0) && (training_chaplain <= 6)) {
+            blur = _recruit_rate[training_chaplain];
+        }
+        draw_text(xx + 407, yy + 414, string_hash_to_newline(L("Chaplain Training: ") + L(blur)));
+        draw_text(xx + 728, yy + 414, string_hash_to_newline(L("[-] [+]")));
+    }
+
+    // ** Psyker recruitment **
+    amo = 0;
+    draw_set_color(16291875);
+    if (training_psyker == 1) {
+        amo = -1;
+    }
+    if (training_psyker == 2) {
+        amo = -2;
+    }
+    if (training_psyker == 3) {
+        amo = -3;
+    }
+    if (training_psyker == 4) {
+        amo = -4;
+    }
+    if (training_psyker == 5) {
+        amo = -6;
+    }
+    if (training_psyker == 6) {
+        amo = -12;
+    }
+    if (amo != 0) {
+        draw_sprite(spr_requisition, 0, xx + 336 + 16, yy + 436);
+    }
+    if (training_psyker != 0) {
+        draw_text(xx + 351 + 16, yy + 434, string_hash_to_newline(string(amo)));
+    }
+    draw_set_color(c_gray);
+    if ((training_psyker >= 0) && (training_psyker <= 6)) {
+        blur = _recruit_rate[training_psyker];
+    }
+    draw_text(xx + 407, yy + 434, string_hash_to_newline(L("Psyker Training: ") + L(blur)));
+    draw_text(xx + 728, yy + 434, string_hash_to_newline(L("[-] [+]")));
+
+    // ** Techmarine recruitment **
+    amo = 0;
+    draw_set_color(16291875);
+    if (training_techmarine == 1) {
+        amo = -1;
+    }
+    if (training_techmarine == 2) {
+        amo = -2;
+    }
+    if (training_techmarine == 3) {
+        amo = -3;
+    }
+    if (training_techmarine == 4) {
+        amo = -4;
+    }
+    if (training_techmarine == 5) {
+        amo = -6;
+    }
+    if (training_techmarine == 6) {
+        amo = -12;
+    }
+    if (amo != 0) {
+        draw_sprite(spr_requisition, 0, xx + 336 + 16, yy + 456);
+    }
+    if (training_techmarine != 0) {
+        draw_text(xx + 351 + 16, yy + 456, string_hash_to_newline(string(amo)));
+    }
+    draw_set_color(c_gray);
+    if ((training_techmarine >= 0) && (training_techmarine <= 6)) {
+        blur = _recruit_rate[training_techmarine];
+    }
+    draw_text(xx + 407, yy + 454, LF("Techmarine Training: {0}", [L(blur)]));
+    draw_text(xx + 728, yy + 454, L("[-] [+]"));
+
+    // ** Neophyte Training types **
+    var yyy = 0;
+    var trial_data = scr_trial_data();
+    var cur_trial = trial_data[recruit_trial];
+
+    draw_set_halign(fa_center);
+    draw_set_font(fnt_40k_30b);
+    draw_text_transformed(xx + 622, yy + 491, L("Aspirant Trial"), 0.6, 0.6, 0);
+    draw_set_font(fnt_40k_14b);
+
+    draw_text_ext(xx + 622, yy + 522, L(cur_trial.name), -1, 536);
+    draw_set_halign(fa_left);
+    draw_set_font(fnt_40k_14);
+
+    yyy = string_height_ext(string_hash_to_newline(cur_trial.long_description), -1, 536) + yy + 545;
+
+    draw_text_ext_transformed(xx + 336 + 16, yy + 545, string_hash_to_newline(L(cur_trial.long_description)), -1, 536, 0.85, 0.85, 0);
+
+    draw_sprite(spr_arrow, 0, xx + 494, yy + 515);
+    draw_sprite(spr_arrow, 1, xx + 717, yy + 515);
+    recruit_list_pane.draw(xx + 940, yy + 66, 0.72);
+    left_panel.inside_method = function() {
+        var xx = camera_get_view_x(view_camera[0]);
+        var yy = camera_get_view_y(view_camera[0]);
+        draw_set_halign(fa_left);
+        draw_set_font(fnt_40k_14);
+        if (left_panel.percent_cut > 90) {
+            var trial_data = scr_trial_data();
+            var cur_trial = trial_data[recruit_trial];
+            draw_text_ext(xx + 20 + 16, yy + 120, string_hash_to_newline(scr_compile_trial_bonus_string(cur_trial)), -1, 280);
+        }
+    };
+    if (scr_hit(lower_middle_box)) {
+        left_panel.percent_mod_draw_cut(xx + 10, yy + 38, 0.38, 1, 6);
+    } else {
+        left_panel.percent_mod_draw_cut(xx + 10, yy + 38, 0.38, 1, -6);
+    }
+}

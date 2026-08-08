@@ -1,0 +1,82 @@
+function set_alert_draw_colour(alert_colour) {
+    static default_colour = CM_GREEN_COLOR;
+    static colour_map = {
+        "red": c_red,
+        "yellow": 57586,
+        "purple": c_purple,
+        "green": CM_GREEN_COLOR,
+    }; //TODO set constants for colours
+    if (alert_colour != "") {
+        if (struct_exists(colour_map, alert_colour)) {
+            draw_set_color(colour_map[$ alert_colour]);
+        } else {
+            try {
+                draw_set_color(alert_colour);
+            } catch (_exception) {
+                draw_set_color(default_colour);
+            }
+        }
+    } else {
+        draw_set_color(default_colour);
+    }
+}
+
+function scr_alert(colour, alert_type, alert_text, xx = 0, yy = 0) {
+    // color / type / text /x/y
+
+    // Quenes up one of the ALERT lines of text to be displayed by the obj_turn_end object
+    // If the Y argument is >0 then the exclamation popup (obj_alert) is also created on the map
+
+    // if (obj_turn_end.alerts>0){
+    if (instance_exists(obj_turn_end)) {
+        var _last = obj_turn_end.alerts;
+        if ((alert_type != "blank") && (colour != "blank")) {
+            if ((_last > 0) && (obj_turn_end.alerts_list[_last - 1].text == "-" + string(alert_text))) {
+                obj_turn_end.alerts_list[_last - 1].count += 1; // collapse duplicate into the last alert
+            } else {
+                obj_turn_end.alerts += 1;
+                obj_turn_end.alerts_list[obj_turn_end.alerts - 1] = new NotificationAlert(colour, alert_type, alert_text);
+            }
+        }
+    }
+
+    if ((yy > 0) || (yy < -10000)) {
+        var new_obj;
+
+        if (xx < -15000) {
+            xx += 20000;
+            yy += 20000;
+        }
+        if (xx < -15000) {
+            xx += 20000;
+            yy += 20000;
+        }
+        if (xx < -15000) {
+            xx += 20000;
+            yy += 20000;
+        }
+        if (xx < -15000) {
+            xx += 20000;
+            yy += 20000;
+        }
+        if (xx < -15000) {
+            xx += 20000;
+            yy += 20000;
+        }
+        if (xx < -15000) {
+            xx += 20000;
+            yy += 20000;
+        }
+        if (xx < -15000) {
+            xx += 20000;
+            yy += 20000;
+        }
+        if (xx < -15000) {
+            xx += 20000;
+            yy += 20000;
+        }
+
+        new_obj = instance_create(xx + 16, yy - 24, obj_star_event);
+        new_obj.col = colour;
+    }
+}

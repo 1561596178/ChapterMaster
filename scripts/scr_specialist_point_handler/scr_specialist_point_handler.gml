@@ -1,0 +1,513 @@
+﻿function SpecialistPointHandler() constructor {
+    forge_queue = [];
+    techs = [];
+    apoths = [];
+    forge_master = -1;
+    master_craft_chance = 0;
+    at_forge = 0;
+    apothecary_points = 0;
+    armoury_repairs = {};
+    apothecary_training_points = 0;
+    forge_points = 0;
+    point_breakdown = {};
+
+    // ** Gene-seed Test-Slaves **
+    static add_to_armoury_repair = function(item, count = 1) {
+        if (is_string(item)) {
+            if (item != "") {
+                if (!struct_exists(armoury_repairs, item)) {
+                    armoury_repairs[$ item] = count;
+                } else {
+                    armoury_repairs[$ item] += count;
+                }
+            }
+        }
+    };
+
+    static pre_error_wrapped_research_points = function() {
+        research_points = 0;
+        forge_points = 0;
+        master_craft_chance = (obj_controller.tech_status == "heretics") ? 5 : 0;
+
+        apothecary_points = 0;
+        apothecary_training_points = 0;
+        apothecary_points_used = 0;
+
+        forge_equipment_maintenance = 0;
+        crafters = 0;
+        at_forge = 0;
+
+        apoths = [];
+        techs = [];
+        heretics = [];
+
+        point_breakdown = {
+            fleets: {},
+            systems: {},
+        };
+
+        forge_master = -1;
+        forge_veh_maintenance = {
+            repairs: 0,
+        };
+
+        process_specialist_points();
+
+        total_techs = array_length(techs);
+        tech_locations = array_create(total_techs);
+        for (var i = 0; i < total_techs; i++) {
+            tech_locations[i] = techs[i].marine_location();
+        }
+
+        var apothecary_string = "AP Production#";
+apothecary_string += LF("Apothecaries: {0}", [apothecary_points]) + "#";
+
+        apothecary_string += "#AP Consumption#";
+apothecary_string += LF("Healing: {0}", [apothecary_points_used]) + "#";
+        apothecary_points -= apothecary_points_used;
+apothecary_string += LF("Recruit Screening: {0}", [apothecary_training_points]) + "#";
+        apothecary_points -= apothecary_training_points;
+
+apothecary_string += LF("#Total AP: {0}", [apothecary_points]);
+
+        var forge_string = "FP Production#";
+forge_string += LF("Techmarines: {0}", [floor(forge_points)]) + "#";
+
+        var _forge_data = obj_controller.player_forge_data;
+        if (_forge_data.player_forges > 0) {
+            var _forge_gain = 5 * _forge_data.player_forges;
+            forge_points += _forge_gain;
+forge_string += LF("Forges: {0}", [_forge_gain]) + "#";
+        }
+
+        forge_string += "#FP Consumption#";
+        forge_points -= forge_equipment_maintenance;
+        forge_string += LF("Equipment Maintenance: {0}", [forge_equipment_maintenance]) + "#";
+
+        var _armoury_names = struct_get_names(armoury_repairs);
+        for (var i = 0, _count = array_length(_armoury_names); i < _count; i++) {
+            var _item = _armoury_names[i];
+            var _repair_cost = gear_weapon_data("any", _item, "maintenance") * armoury_repairs[$ _item];
+            forge_points -= _repair_cost;
+            forge_string += LF("Equipment Repairs ({0}): {1}", [L(_item), _repair_cost]) + "#";
+        }
+
+        var _v_maintenance = [
+            {
+                key: "land_raider",
+                label: "Land Raider",
+            },
+            {
+                key: "small_vehicles",
+                label: "Small Vehicle",
+            },
+        ];
+
+        for (var i = 0; i < array_length(_v_maintenance); i++) {
+            var _item = _v_maintenance[i];
+            var _maint = forge_veh_maintenance[$ _item.key] ?? 0;
+            if (_maint > 0) {
+                forge_string += LF("{0} Maintenance: {1}", [L(_item.label), _maint]) + "#";
+                forge_points -= _maint;
+            }
+        }
+
+        if (forge_veh_maintenance.repairs > 0) {
+forge_string += LF("Vehicle Repairs: {0}", [forge_veh_maintenance.repairs]) + "#";
+        }
+
+forge_string += LF("#Total FP: {0}", [forge_points]);
+
+        forge_points = floor(forge_points);
+
+        if (turn_end) {
+            if (total_techs == 0) {
+                scr_loyalty("Upset Machine Spirits", "+");
+            }
+
+            tech_ideology_spread();
+            new_tech_heretic_spawn();
+
+            if (forge_master == -1) {
+                var _tech_units = scr_role_count(obj_ini.role[100][16], "", "units");
+                var _count = array_length(_tech_units);
+                if (_count > 1) {
+                    setup_new_forge_master_popup(techs);
+                } else if (_count == 1) {
+                    _tech_units[0].update_role("Forge Master");
+                }
+            }
+
+            forge_queue_logic();
+            gene_slave_logic();
+            armoury_repairs = {};
+        }
+
+        obj_controller.research_points = research_points;
+        obj_controller.forge_points = forge_points;
+        obj_controller.master_craft_chance = master_craft_chance;
+        obj_controller.forge_string = forge_string;
+        obj_controller.apothecary_string = apothecary_string;
+    };
+
+    static calculate_research_points = function(turn_end) {
+        self.turn_end = turn_end;
+        try {
+            pre_error_wrapped_research_points();
+        } catch (ex) {
+            ERROR_HANDLER.handle_exception(ex);
+        }
+    };
+
+    static new_tech_heretic_spawn = function() {
+        var _tester = global.character_tester;
+        var _possibility_of_heresy = 8;
+        if (scr_has_disadv("Tech-Heresy")) {
+            _possibility_of_heresy = 6;
+        }
+        if (irandom(power(_possibility_of_heresy, (array_length(techs) + 2.2))) == 0 && array_length(techs) > 0) {
+            var _current_tech = array_random_element(techs);
+            if (!_tester.standard_test(_current_tech, "piety")[0]) {
+                _current_tech.add_trait("tech_heretic");
+                _current_tech.edit_corruption(20 + irandom(15));
+            }
+        }
+    };
+
+    static add_forge_points_to_stack = function(unit) {
+        if (unit.in_jail()) {
+            return;
+        }
+        array_push(techs, unit);
+        if (unit.technology > 40 && unit.hp() > 0) {
+            research_points += unit.technology - 40;
+            var _forge_point_gen = unit.forge_point_generation(false);
+            var _unit_forge_gen_data = _forge_point_gen[1];
+            if (struct_exists(_unit_forge_gen_data, "crafter")) {
+                crafters++;
+            }
+            if (struct_exists(_unit_forge_gen_data, "at_forge")) {
+                at_forge++;
+                master_craft_chance += unit.experience / 50;
+            }
+            forge_points += _forge_point_gen[0];
+            var _tech_array_id = array_length(techs) - 1;
+            if (unit.has_trait("tech_heretic")) {
+                array_push(heretics, _tech_array_id);
+            }
+            if (unit.IsSpecialist(SPECIALISTS_HEADS)) {
+                forge_master = _tech_array_id;
+            }
+        }
+    };
+
+    static add_apoth_points_to_stack = function(unit) {
+        if (unit.in_jail()) {
+            return;
+        }
+        if (unit.hp() > 0) {
+            var _apoth_point_gen = unit.apothecary_point_generation(false);
+            apothecary_points += _apoth_point_gen[0];
+        }
+    };
+
+    //handles tech heretic idealology rot
+    static tech_ideology_spread = function() {
+        var _heritecs = obj_controller.tech_status == "heretics";
+        try {
+            var tech_test, charisma_test, piety_test, _met_non_heretic, heretics_persuade_chances;
+            var _tester = global.character_tester;
+            var _noticed_heresy = false; // should this be in the for loop?
+            if (array_length(heretics) > 0 && obj_controller.turn > 75) {
+                var _heretic_location, _same_location, _current_heretic, _current_tech;
+                //iterate through tech heretics;
+                for (var heretic = 0; heretic < array_length(heretics); heretic++) {
+                    _heretic_location = tech_locations[heretics[heretic]];
+                    _current_heretic = techs[heretics[heretic]];
+                    if (_current_heretic.in_jail()) {
+                        continue;
+                    }
+                    heretics_persuade_chances = floor(_current_heretic.charisma / 5) - 3;
+                    //iterate through rest of techs
+                    var _pursuasions = [];
+                    _met_non_heretic = false;
+                    var _new_pursuasion;
+                    for (var i = 0; i < array_length(techs) && heretics_persuade_chances > 0; i++) {
+                        _same_location = false;
+                        _new_pursuasion = array_random_index(techs);
+                        //if tech is also heretic skip
+                        if (array_contains(heretics, _new_pursuasion)) {
+                            continue;
+                        }
+                        if (array_contains(_pursuasions, _new_pursuasion)) {
+                            continue;
+                        }
+                        heretics_persuade_chances--;
+                        _current_tech = techs[_new_pursuasion];
+
+                        // find out if heretic is in same location as techmarine
+                        if (locations_are_equal(_heretic_location, tech_locations[_new_pursuasion])) {
+                            _met_non_heretic = true;
+                            //if so do a an opposed technology test of techmarine vs tech  heretic techmarine
+                            tech_test = _tester.oppposed_test(_current_heretic, _current_tech, "technology");
+
+                            if (tech_test[0] == 1) {
+                                // if heretic wins do an opposed charisma test
+                                charisma_test = _tester.oppposed_test(_current_heretic, _current_tech, "charisma", -15 + _current_tech.corruption);
+                                if (charisma_test[0] == 1) {
+                                    // if heretic win tech is corrupted
+                                    //tech is corrupted by half the pass margin of the heretic
+                                    //this means high charisma heretics will spread corruption more quickly and more often
+                                    if (_current_heretic.corruption > _current_tech.corruption) {
+                                        _current_tech.edit_corruption(min(4, charisma_test[1]));
+                                    }
+
+                                    // tech takes a piety test to see if they break faith with cult mechanicus and become tech heretic
+                                    //piety test is augmented by by the techs corruption with the test becoming harder to pass the more
+                                    // corrupted the tech is
+                                    piety_test = _tester.standard_test(_current_tech, "piety", +75 - _current_tech.corruption);
+
+                                    // if tech fails piety test tech also becomes tech heretic
+                                    if (piety_test[0] == false && choose(true, false)) {
+                                        _current_tech.add_trait("tech_heretic");
+                                    }
+                                } else if (charisma_test[0] == 2 && !_heritecs) {
+                                    if (charisma_test[1] > 40 && _noticed_heresy == false) {
+                                        scr_alert("purple", "Tech Heresy", $"{_current_tech.name_role()} contacts you concerned of Tech Heresy in the Armentarium");
+                                        scr_event_log("purple", $"{_current_tech.name_role()} contacts you concerned of Tech Heresy in the Armentarium");
+                                        _noticed_heresy = true;
+                                    }
+                                }
+                            }
+                            if (_new_pursuasion == forge_master) {
+                                // if tech is the forge master then forge master takes a wisdom in this case doubling as a perception test
+                                // if forge master passes tech heresy is noted and chapter master notified
+                                if (_tester.standard_test(_current_tech, "wisdom", -40)[0] && !_noticed_heresy && !_heritecs) {
+                                    _noticed_heresy = true;
+                                    scr_event_log("purple", $"{techs[forge_master].name_role()} Has noticed signs of tech heresy amoung the Armentarium ranks");
+                                    scr_alert("purple", "Tech Heresy", $"{techs[forge_master].name_role()} Has noticed signs of tech heresy amoung the Armentarium ranks");
+                                }
+                            }
+                        }
+                    }
+                    if (!_met_non_heretic) {
+                        if (irandom(4) == 0) {
+                            _current_heretic.edit_corruption(1);
+                        }
+                    }
+                    //add check to see if tech heretic is anywhere near mechanicus forge if so maybe do stuff??
+                }
+                if (array_length(techs) > array_length(heretics) && !_heritecs) {
+                    if (array_length(heretics) / array_length(techs) >= 0.35) {
+                        if (!irandom(9)) {
+                            tech_uprising_event();
+                        }
+                    }
+                }
+            }
+        } catch (_exception) {
+            ERROR_HANDLER.handle_exception(_exception);
+        }
+    };
+
+    static forge_queue_logic = function() {
+        if (forge_points > 0) {
+            var _reduction_points = forge_points;
+            if (array_length(forge_queue) > 0 && forge_points > 0) {
+                var forging_length = array_length(forge_queue);
+                for (var i = 0; i < forging_length; i++) {
+                    if (forge_queue[i].forge_points <= _reduction_points) {
+                        _reduction_points -= forge_queue[i].forge_points;
+
+                        scr_evaluate_forge_item_completion(forge_queue[i]);
+
+                        array_delete(forge_queue, i, 1);
+                        i--;
+                        forging_length--;
+                    } else {
+                        forge_queue[i].forge_points -= _reduction_points;
+                        _reduction_points = 0;
+                    }
+                    if (_reduction_points <= 0) {
+                        break;
+                    }
+                }
+            }
+        }
+    };
+
+    static draw_forge_queue = function(xx, yy) {
+        var _box_width = 527;
+        draw_set_color(c_gray);
+        draw_rectangle(xx, yy, xx + _box_width, yy + 15, 0);
+        draw_set_alpha(1);
+        draw_set_font(fnt_40k_14);
+        draw_set_color(0);
+        draw_text(xx, yy - 5, L("Name"));
+        draw_text(xx + 141, yy - 5, L("Number"));
+        draw_text(xx + 241, yy - 5, L("Forge Points"));
+        draw_text(xx + 341, yy - 5, L("Construction ETA"));
+        draw_set_color(c_gray);
+        var item_gap = 13;
+        var total_eta = 0;
+        static top_point = 0;
+        for (var i = top_point; i < 13; i++) {
+            if (i + 1 > array_length(forge_queue)) {
+                break;
+            }
+
+            draw_set_color(c_gray);
+            if (scr_hit(xx, yy + item_gap, xx + _box_width, yy + item_gap + 20)) {
+                draw_set_color(c_white);
+            }
+
+            var _forge_order = forge_queue[i];
+            var _display_name = "ERROR";
+
+            if (struct_exists(_forge_order, "item")) {
+                /// @type {Struct.ShopItem}
+                var _shop_item = _forge_order.item;
+                _display_name = _shop_item.display_name ?? "ERROR";
+            }
+
+            _display_name = (is_string(_display_name)) ? _display_name : "ERROR";
+
+            draw_text(xx, yy + item_gap, _display_name);
+            draw_text(xx + 166, yy + item_gap, _forge_order.count);
+
+            if (_forge_order.ordered == obj_controller.turn) {
+                if (_forge_order.count > 1) {
+                    if (point_and_click(draw_unit_buttons([xx + 141, yy + item_gap], "-", [0.75, 0.75], c_red))) {
+                        var _unit_cost = _forge_order.forge_points / _forge_order.count;
+                        _forge_order.count--;
+                        _forge_order.forge_points -= _unit_cost;
+                    }
+                }
+                if (_forge_order.count < 100) {
+                    if (point_and_click(draw_unit_buttons([xx + 180, yy + item_gap], "+", [0.75, 0.75], c_green))) {
+                        var _unit_cost = _forge_order.forge_points / _forge_order.count;
+                        _forge_order.count++;
+                        _forge_order.forge_points += _unit_cost;
+                    }
+                }
+            }
+
+            draw_text(xx + 271, yy + item_gap, string_hash_to_newline(_forge_order.forge_points));
+            total_eta += ceil(_forge_order.forge_points / forge_points);
+            draw_text(xx + 376, yy + item_gap, LF("{0} turns", [total_eta]));
+            if (point_and_click(draw_unit_buttons([xx + 491, yy + item_gap], "X", [0.75, 0.75], c_red))) {
+                array_delete(forge_queue, i, 1);
+            }
+            item_gap += 20;
+        }
+    };
+
+    static gene_slave_logic = function() {
+        var _slave_length = array_length(obj_ini.gene_slaves);
+        var _slaves = obj_ini.gene_slaves;
+        var _cur_slave;
+        var _lost_gene_slaves = 0;
+        var _stack_lost_incubators = [];
+        for (var i = 0; i < _slave_length; i++) {
+            _cur_slave = _slaves[i];
+            if (_cur_slave.num > 0) {
+                _cur_slave.eta--;
+                if (irandom(100000) <= (100 - obj_ini.stability) * _cur_slave.num) {
+                    _cur_slave.num--;
+                    _lost_gene_slaves++;
+                    scr_add_item("Gene Pod Incubator");
+                }
+                if (_cur_slave.eta == 0 && _cur_slave.num > 0) {
+                    _cur_slave.eta = 60;
+                    obj_controller.gene_seed += _cur_slave.num;
+                    // color / type / text /x/y
+                    scr_alert("green", "test-slaves", $"Test-Slave Incubators Batch {i} harvested for {_cur_slave.num} Gene-Seed.", 0, 0);
+                    scr_event_log("green", $"Test-Slave Incubators Batch {i} harvested for {_cur_slave.num} Gene-Seed.");
+                } else if (_cur_slave.num == 0) {
+                    array_push(_stack_lost_incubators, i);
+                }
+            }
+        }
+        if (array_length(_stack_lost_incubators)) {
+            var _lost_inc_string = "Incubators Batch no longer has gene slaves and has been removed : ";
+            for (var i = array_length(_stack_lost_incubators) - 1; i >= 0; i--) {
+                scr_destroy_gene_slave_batch(_stack_lost_incubators[i]);
+                _lost_inc_string += $"{i},";
+            }
+            scr_alert("", "test-slaves", _lost_inc_string, 0, 0);
+            scr_event_log("", "test-slaves", _lost_inc_string);
+        }
+        if (_lost_gene_slaves > 0) {
+            scr_alert("", "test-slaves", $"{_lost_gene_slaves} gene slaves lost due to geneseed instability their incubators have been returned to the armoury", 0, 0);
+            scr_event_log("", $"{_lost_gene_slaves} gene slaves lost due to geneseed instability their incubators have been returned to the armoury");
+        }
+    };
+
+    static scr_forge_item = function(_forge_order) {
+        var master_craft_count = 0;
+        var quality_string = "";
+        var normal_count = 0;
+        /// @type {Struct.ShopItem}
+        var _item = _forge_order.item;
+
+        for (var s = 0; s < _forge_order.count; s++) {
+            if (master_craft_chance && (irandom(100) < master_craft_chance)) {
+                master_craft_count++;
+            } else {
+                normal_count++;
+            }
+        }
+
+        scr_add_item(_item.name, normal_count);
+
+        if (master_craft_count > 0) {
+            scr_add_item(_item.name, master_craft_count, "master_crafted");
+            var numerical_string = master_craft_count == 1 ? "was" : "were";
+            quality_string = $"x{master_craft_count} {numerical_string} completed to a Master Crafted standard!";
+        } else {
+            quality_string = $"All were completed to a standard STC compliant quality!";
+        }
+
+        scr_popup("Forge Completed", $"Construction of x{_forge_order.count} {_item.display_name} is finished! {quality_string}", "", "");
+    };
+
+    static scr_evaluate_forge_item_completion = function(_forge_order) {
+        try {
+            /// @type {Struct.ShopItem}
+            var _item = _forge_order.item;
+
+            if (_item.forge_type == "normal") {
+                var is_vehicle = variable_struct_exists(global.vehicles, _item.name);
+                if (!is_vehicle) {
+                    scr_forge_item(_forge_order);
+                } else {
+                    var _loc_counts = new CountingMap();
+
+                    repeat (_forge_order.count) {
+                        var vehicle = scr_add_vehicle(_item.name, obj_controller.new_vehicles);
+                        var build_loc = array_random_element(obj_controller.player_forge_data.vehicle_hanger);
+                        obj_ini.veh_loc[vehicle[0]][vehicle[1]] = build_loc[0];
+                        obj_ini.veh_wid[vehicle[0]][vehicle[1]] = build_loc[1];
+                        obj_ini.veh_lid[vehicle[0]][vehicle[1]] = -1;
+                        _loc_counts.add($"{build_loc[0]} {build_loc[1]}");
+                    }
+
+                    var _loc_summary = _loc_counts.get_custom_string(function(_key, _count) {
+                        return $"{_count} at {_key}\n";
+                    });
+
+                    var _company = obj_controller.new_vehicles;
+                    var _company_name = (_company >= 1 && _company <= 10) ? LF("{0} Company", [int_to_roman(_company)]) : "Reserve";
+
+                    scr_popup(L("Forge Completed"), LF("Construction of x{0} {1} is finished!\n\nAssigned to: {2}\n\nReady at:\n{3}", [_forge_order.count, _item.display_name, _company_name, _loc_summary]), "", "");
+                }
+            } else if (_item.forge_type == "research") {
+                scr_advance_research(_item.name);
+                scr_popup(L("Research Completed"), LF("Research of {0} complete", [_item.display_name]), "", "");
+            }
+        } catch (_exception) {
+            LOGGER.critical(_forge_order);
+            ERROR_HANDLER.handle_exception(_exception);
+        }
+    };
+}

@@ -1,0 +1,142 @@
+if (!instance_exists(obj_popup)) {
+    if (cd < 1) {
+        if (click_stall_timer < 1) {
+            if (enemy_forces <= 0) {
+                // Combat for whatever reason sometimes bugs out when there are no enemies, so if enter is pressed 6 times at this state it will set started to 2
+                enter_pressed++;
+            }
+
+            if (started >= 2) {
+                instance_activate_object(obj_pnunit);
+            }
+
+            if (started == 3) {
+                instance_activate_all();
+                instance_activate_object(obj_pnunit);
+                instance_activate_object(obj_enunit);
+                instance_destroy(obj_popup);
+                instance_destroy(obj_star_select);
+                if (instance_exists(obj_pnunit)) {
+                    obj_pnunit.alarm[6] = 1;
+                }
+
+                alarm[7] = 2;
+                click_stall_timer = 15;
+            }
+
+            if (turn_count >= 50 || enter_pressed > 5) {
+                started = 2;
+            }
+            if ((started == 2) || (started == 4)) {
+                instance_activate_object(obj_pnunit);
+                instance_activate_object(obj_enunit);
+                started = 3;
+                var _quad_factor = 10;
+                total_battle_exp_gain = _quad_factor * sqr(threat);
+                if (instance_exists(obj_enunit)) {
+                    obj_enunit.alarm[1] = 1;
+                }
+                instance_activate_object(obj_star);
+                instance_activate_object(obj_event_log);
+                alarm[5] = 6;
+                click_stall_timer = 15;
+
+                fack = 1;
+
+                var _newline = "";
+                var _newline_color = eMSG_COLOR.DEFAULT;
+
+                _newline = "------------------------------------------------------------------------------";
+                combat_log.push(_newline, _newline_color);
+                _newline = "------------------------------------------------------------------------------";
+                combat_log.push(_newline, _newline_color);
+            }
+
+            if ((fadein < 0) && (fadein > -100) && (started == 0)) {
+                fadein = -500;
+                started = 1;
+                timer_speed = 1;
+                timer_stage = 1;
+                timer = 100;
+
+                if (battle_special == "ship_demon") {
+                    timer_stage = 3;
+                }
+            }
+
+            if (started > 0) {
+                // This might be causing problems?
+                if (instance_exists(obj_pnunit)) {
+                    obj_pnunit.alarm[8] = 8;
+                }
+                if (instance_exists(obj_enunit)) {
+                    obj_enunit.alarm[8] = 8;
+                }
+            }
+
+            if ((timer_stage == 1) || (timer_stage == 5)) {
+                combat_debugger.add(eCOMBAT_CATEGORY.SYSTEM, $"=== Player Turn start (turn {turn_count}) ===");
+                if (global_perils > 0) {
+                    global_perils -= 1;
+                }
+                if (global_perils < 0) {
+                    global_perils = 0;
+                }
+                turns += 1;
+
+                four_show = 0;
+                click_stall_timer = 15;
+
+                if (enemy != 6) {
+                    if (instance_exists(obj_enunit)) {
+                        obj_enunit.alarm[1] = 1;
+                    }
+                    set_up_player_blocks_turn();
+                } else if (enemy == 6) {
+                    if (instance_exists(obj_enunit)) {
+                        obj_enunit.alarm[1] = 2;
+                        move_enemy_blocks();
+                        obj_enunit.alarm[0] = 3;
+                    }
+                    if (instance_exists(obj_pnunit)) {
+                        wait_and_execute(1, scr_player_combat_weapon_stacks);
+                        turn_count++;
+                    }
+                }
+                reset_combat_message_arrays();
+                timer_stage = 2;
+            } else if (timer_stage == 3) {
+                combat_debugger.add(eCOMBAT_CATEGORY.SYSTEM, $"=== Enemy Turn start (turn {turn_count}) ===");
+                if (battle_over != 1) {
+                    alarm[8] = 15;
+                }
+                click_stall_timer = 15;
+
+                if (enemy != 6) {
+                    if (instance_exists(obj_pnunit)) {
+                        with (obj_pnunit) {
+                            wait_and_execute(1, scr_player_combat_weapon_stacks);
+                        }
+                        turn_count++;
+                    }
+                    if (instance_exists(obj_enunit)) {
+                        obj_enunit.alarm[1] = 2;
+                        move_enemy_blocks();
+                        obj_enunit.alarm[0] = 3;
+                        obj_enunit.alarm[8] = 4;
+                        turns += 1;
+                    }
+                    reset_combat_message_arrays();
+                }
+                if (enemy == 6) {
+                    set_up_player_blocks_turn();
+                    turns += 1;
+                    if (instance_exists(obj_enunit)) {
+                        obj_enunit.alarm[1] = 1;
+                    }
+                    reset_combat_message_arrays();
+                }
+            }
+        }
+    }
+}

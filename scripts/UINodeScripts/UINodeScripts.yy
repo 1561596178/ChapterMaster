@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"UINodeScripts",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"UINodeScripts",
+  "parent":{
+    "name":"Constructors",
+    "path":"folders/Scripts/Constructors.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}
