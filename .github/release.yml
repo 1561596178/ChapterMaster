@@ -1,0 +1,33 @@
+changelog:
+  exclude:
+    labels:
+      - "Action: Hide"
+
+  categories:
+    - title: Possibly Breaking Changes
+      labels:
+        - "Type: Breaking"
+        
+    - title: New/Changed
+      labels:
+        - "Type: Feature"
+        
+    - title: Fixes
+      labels:
+        - "Type: Fix"
+        
+    - title: Under The Hood - Big!
+      labels:
+        - "Size: Warning"
+        - "Size: Epic"
+        - "Size: Huge"
+        
+    - title: Under The Hood
+      labels:
+        - "Type: Refactor"
+        - "Type: Performance"
+        - "Type: Code Style"
+        
+    - title: Other Changes
+      labels:
+        - "*"
