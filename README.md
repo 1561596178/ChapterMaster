@@ -26,3 +26,33 @@
 最后，我希望这对用ai进行老游戏文件的维护和本地化有启示，毕竟如上文所言，使用者是一个对编程一窍不通的纯小子（
 
 最后的最后，如果有什么其他需要添加的东西也请告诉我，因为这也是我第一次在github上上传文件。
+
+
+
+Statement:
+
+1. First of all, I am completely clueless about programming, so please read this with that in mind.
+
+2. The reason is, I previously used AI to fix and localize some outdated mods for games. So I wondered if I could use AI to localize Chapter Master into Chinese. The rough version you see now is the AI-based localization I completed.
+
+3. The process of this localization was: first translating proper nouns, then letting AI do the first round of Chinese translation. After that, I entered the game to verify the translation, identified which translations were successful and which were not, and fed the untranslated parts back to AI. AI then searched for the untranslated text in the source files and replaced the text in the code, adding the Chinese localization in the localization files. This work was done by verifying each page in the game one by one. Of course, there might be better ways, but I don’t know them (
+
+4. Currently, the main pages and some subpages have been localized into Chinese.
+
+Known Issues:
+
+1. Some dynamic texts, like names and default battalion names, are not localized.
+
+2. The battle log content is not fully translated; I did my best. As mentioned above, I know nothing about programming.
+
+3. Chinese long texts will not automatically wrap after translation, so you need to manually add line breaks during localization. Currently, the suggestion is 20-25 characters per line. Although I tried to have AI adjust the lines, there are probably many omissions, sorry about that.
+
+4. I’m not sure if it’s an issue with my GameMaker version (IDE v2026.100.0.1110 Beta) or if I did something wrong (it’s also my first time using GameMaker), but the font doesn’t align with its background box. Usually, it’s slightly below the text box, and many titles overlap with the text below. I first tried scaling the font in GameMaker, but then it froze. So in the end, I just manually adjusted the text positions in the bluntest way.
+
+I don’t know if the files I uploaded are helpful to you. If you need me to upload other files, just let me know.
+
+If you want to fix the existing Chinese translation, you can check Chaptermaster-Aidatafilesmainlocalizationzh-CN.json to modify the translated content. If you have the game files, the project is located in ChapterMastermainlocalization.
+
+Finally, I hope this can provide some insight into using AI for maintaining and localizing old game files. As mentioned above, the user here is a complete noob when it comes to programming (
+
+And last but not least, if there’s anything else you think should be added, please tell me, since this is also my first time uploading files on GitHub.
