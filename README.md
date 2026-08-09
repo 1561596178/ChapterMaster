@@ -51,7 +51,7 @@ Known Issues:
 
 I don’t know if the files I uploaded are helpful to you. If you need me to upload other files, just let me know.
 
-If you want to fix the existing Chinese translation, you can check Chaptermaster-Aidatafilesmainlocalizationzh-CN.json to modify the translated content. If you have the game files, the project is located in ChapterMastermainlocalization.
+If you want to fix the existing Chinese translation, you can check Chaptermaster-Ai\datafiles\main\localization zh-CN.json to modify the translated content. If you have the game files, the project is located in ChapterMaster\main\localization.
 
 Finally, I hope this can provide some insight into using AI for maintaining and localizing old game files. As mentioned above, the user here is a complete noob when it comes to programming (
 
