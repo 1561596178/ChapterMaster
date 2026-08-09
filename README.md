@@ -26,7 +26,7 @@
 最后，我希望这对用ai进行老游戏文件的维护和本地化有启示，毕竟如上文所言，使用者是一个对编程一窍不通的纯小子（
 
 最后的最后，如果有什么其他需要添加的东西也请告诉我，因为这也是我第一次在github上上传文件。
-
+(本文件修改的版本为 ChapterMaster-main-2026-08-05-1356)
 
 
 Statement:
@@ -56,3 +56,4 @@ If you want to fix the existing Chinese translation, you can check Chaptermaster
 Finally, I hope this can provide some insight into using AI for maintaining and localizing old game files. As mentioned above, the user here is a complete noob when it comes to programming (
 
 And last but not least, if there’s anything else you think should be added, please tell me, since this is also my first time uploading files on GitHub.
+(This document is the modified version of ChapterMaster-main-2026-08-05-1356)
