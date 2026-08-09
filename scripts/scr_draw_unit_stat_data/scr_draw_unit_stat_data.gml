@@ -1,4 +1,4 @@
-﻿function scr_draw_unit_stat_data(manage = false, data_block = {x1: 1008, y1: 520, w: 569, h: 303}, squeezed = false) {
+function scr_draw_unit_stat_data(manage = false, data_block = {x1: 1008, y1: 520, w: 569, h: 303}, squeezed = false) {
     var _cur_font = draw_get_font();
     draw_set_font(fnt_40k_14);
     var xx = camera_get_view_x(view_camera[0]);
@@ -160,16 +160,16 @@
     var _gen_reasons = _forge_gen[1];
     _data_entry.text = LF("Forge Production: {0}", [_forge_gen[0]]) + "\n";
     if (struct_exists(_gen_reasons, "trained")) {
-_data_entry.tooltip += LF("Trained On Mars (TEC/10): {0}", [_gen_reasons.trained]) + "\n";
+        _data_entry.tooltip += LF("Trained On Mars (TEC/10): {0}", [_gen_reasons.trained]) + "\n";
         if (struct_exists(_gen_reasons, "at_forge")) {
-_data_entry.tooltip += LF("{0}(at Forge)", [_gen_reasons.at_forge]) + "\n";
+            _data_entry.tooltip += LF("{0}(at Forge)", [_gen_reasons.at_forge]) + "\n";
         }
     }
     if (struct_exists(_gen_reasons, "master")) {
-_data_entry.tooltip += LF("Forge Master: +{0}", [_gen_reasons.master]) + "\n";
+        _data_entry.tooltip += LF("Forge Master: +{0}", [_gen_reasons.master]) + "\n";
     }
     if (struct_exists(_gen_reasons, "crafter")) {
-_data_entry.tooltip += LF("Crafter: +{0}", [_gen_reasons.crafter]) + "\n";
+        _data_entry.tooltip += LF("Crafter: +{0}", [_gen_reasons.crafter]) + "\n";
     }
     if (struct_exists(_gen_reasons, "maintenance")) {
         _data_entry.tooltip += LF("Maintenance: {0}", [_gen_reasons.maintenance]);

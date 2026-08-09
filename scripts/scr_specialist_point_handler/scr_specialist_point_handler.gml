@@ -1,4 +1,4 @@
-﻿function SpecialistPointHandler() constructor {
+function SpecialistPointHandler() constructor {
     forge_queue = [];
     techs = [];
     apoths = [];
@@ -60,24 +60,24 @@
         }
 
         var apothecary_string = "AP Production#";
-apothecary_string += LF("Apothecaries: {0}", [apothecary_points]) + "#";
+        apothecary_string += LF("Apothecaries: {0}", [apothecary_points]) + "#";
 
         apothecary_string += "#AP Consumption#";
-apothecary_string += LF("Healing: {0}", [apothecary_points_used]) + "#";
+        apothecary_string += LF("Healing: {0}", [apothecary_points_used]) + "#";
         apothecary_points -= apothecary_points_used;
-apothecary_string += LF("Recruit Screening: {0}", [apothecary_training_points]) + "#";
+        apothecary_string += LF("Recruit Screening: {0}", [apothecary_training_points]) + "#";
         apothecary_points -= apothecary_training_points;
 
-apothecary_string += LF("#Total AP: {0}", [apothecary_points]);
+        apothecary_string += LF("#Total AP: {0}", [apothecary_points]);
 
         var forge_string = "FP Production#";
-forge_string += LF("Techmarines: {0}", [floor(forge_points)]) + "#";
+        forge_string += LF("Techmarines: {0}", [floor(forge_points)]) + "#";
 
         var _forge_data = obj_controller.player_forge_data;
         if (_forge_data.player_forges > 0) {
             var _forge_gain = 5 * _forge_data.player_forges;
             forge_points += _forge_gain;
-forge_string += LF("Forges: {0}", [_forge_gain]) + "#";
+            forge_string += LF("Forges: {0}", [_forge_gain]) + "#";
         }
 
         forge_string += "#FP Consumption#";
@@ -113,10 +113,10 @@ forge_string += LF("Forges: {0}", [_forge_gain]) + "#";
         }
 
         if (forge_veh_maintenance.repairs > 0) {
-forge_string += LF("Vehicle Repairs: {0}", [forge_veh_maintenance.repairs]) + "#";
+            forge_string += LF("Vehicle Repairs: {0}", [forge_veh_maintenance.repairs]) + "#";
         }
 
-forge_string += LF("#Total FP: {0}", [forge_points]);
+        forge_string += LF("#Total FP: {0}", [forge_points]);
 
         forge_points = floor(forge_points);
 

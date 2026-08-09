@@ -290,7 +290,7 @@ try {
     var p = 0;
     for (var c = 0; c < 11; c++) {
         for (var e = 0; e < array_length(obj_ini.TTRPG[c]); e++) {
-            var _unit = fetch_unit([c,e]);
+            var _unit = fetch_unit([c, e]);
             if (!is_struct(_unit)) {
                 continue;
             }

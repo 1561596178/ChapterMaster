@@ -1,4 +1,4 @@
-﻿/// @description Insert description here
+/// @description Insert description here
 // You can write your code in this editor
 // Draws the main UI menu. The function is used to highlight if you selected something in the menu
 if (instances_exist_any([obj_saveload, obj_ncombat, obj_fleet])) {

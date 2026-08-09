@@ -103,10 +103,9 @@ function TTRPG_stats(faction, comp, mar, class = "marine", other_spawn_data = {}
     manage_tags = [];
     spawn_data = other_spawn_data;
 
-    
-    if (instance_exists(obj_controller)){
+    if (instance_exists(obj_controller)) {
         born = obj_ini.sector_handler.game_year();
-    } else { 
+    } else {
         born = 4000;
     }
 
@@ -931,18 +930,18 @@ function TTRPG_stats(faction, comp, mar, class = "marine", other_spawn_data = {}
         return true;
     };
 
-    static age = function(){
+    static age = function() {
         return obj_ini.sector_handler.get_time_from_current_year(born);
     };
 
-    static recoverable_geneseed = function(){
+    static recoverable_geneseed = function() {
         if (obj_ini.doomed == 1) {
             return 0;
         }
         var _time_as_marine = obj_ini.sector_handler.get_time_from_current_year(marine_ascension);
 
-        return  min(floor(_time_as_marine / 5), gene_seed_mutations.zygote == 0 ? 2 : 1);
-    }
+        return min(floor(_time_as_marine / 5), gene_seed_mutations.zygote == 0 ? 2 : 1);
+    };
 
     //TODO build epithets in to marine profile
     static add_epithet = function(epithet) {
@@ -954,6 +953,7 @@ function TTRPG_stats(faction, comp, mar, class = "marine", other_spawn_data = {}
         }
         array_push(epithets, epithet);
     };
+
     static name = function() {
         if (company < 0 || company >= array_length(obj_ini.name) || marine_number < 0 || marine_number >= array_length(obj_ini.name[company])) {
             return "";
@@ -2250,10 +2250,7 @@ function TTRPG_stats(faction, comp, mar, class = "marine", other_spawn_data = {}
         var artifact_list = equipped_artifacts();
         for (var i = 0; i < array_length(artifact_list); i++) {
             var arti = fetch_artifact(artifact_list[i]);
-            arti.set_bearer([
-                end_company,
-                end_slot,
-            ]);
+            arti.set_bearer([end_company, end_slot]);
         }
     };
 

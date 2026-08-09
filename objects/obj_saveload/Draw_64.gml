@@ -67,9 +67,9 @@ if (!hide) {
                 }
                 draw_set_color(c_white);
                 draw_text_transformed(slot_left + 270, slot_top + 6, L("Chapter"), 0.7, 0.7, 0);
-                    draw_text_transformed(slot_left + 774, slot_top + 6, L("Marines"), 0.7, 0.7, 0);
-                    draw_text_transformed(slot_left + 1024, slot_top + 6, L("Turn"), 0.7, 0.7, 0);
-                    draw_text_transformed(slot_left + 1274, slot_top + 6, L("Game Time"), 0.7, 0.7, 0);
+                draw_text_transformed(slot_left + 774, slot_top + 6, L("Marines"), 0.7, 0.7, 0);
+                draw_text_transformed(slot_left + 1024, slot_top + 6, L("Turn"), 0.7, 0.7, 0);
+                draw_text_transformed(slot_left + 1274, slot_top + 6, L("Game Time"), 0.7, 0.7, 0);
 
                 draw_set_color(c_gray);
                 if (first_open != slot_index) {
@@ -159,7 +159,7 @@ if (!hide) {
                         // Clear
                         var com = instance_create_depth(0, 0, -200010, obj_popup);
                         com.image = "fuklaw";
-com.title = L("Delete Save Game?");
+                        com.title = L("Delete Save Game?");
                         com.text = LF("Are you sure you wish to delete Save {0}- {1}?", [string(save[slot_index]), string(save_chapter[save[slot_index]])]);
                         com.add_option(
                             [

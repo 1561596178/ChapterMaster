@@ -1,4 +1,4 @@
-﻿/// @self Asset.GMObject.obj_controller
+/// @self Asset.GMObject.obj_controller
 function scr_destroy_gene_slave_batch(batch_id, recover_gene = true) {
     var _cur_slave = obj_ini.gene_slaves[batch_id];
     if (recover_gene) {

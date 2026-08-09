@@ -3,7 +3,18 @@ function fetch_squad(array_id) {
 }
 
 function localize_squad_display(_disp) {
-    var _prefixes = ["Terminator Assault", "Terminator", "Veteran", "Devastator", "Tactical", "Assault", "Scout", "Bike", "Breacher", "Command"];
+    var _prefixes = [
+        "Terminator Assault",
+        "Terminator",
+        "Veteran",
+        "Devastator",
+        "Tactical",
+        "Assault",
+        "Scout",
+        "Bike",
+        "Breacher",
+        "Command",
+    ];
     for (var i = 0; i < array_length(_prefixes); i++) {
         var _p = _prefixes[i];
         if (string_pos(_p + " ", _disp) == 1) {

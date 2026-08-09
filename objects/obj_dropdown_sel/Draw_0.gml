@@ -214,8 +214,8 @@ if ((tooltip != "") && (tooltip2 != "")) {
     draw_set_halign(fa_left);
     draw_set_color(c_black);
 
-var _tt2_w = string_width_ext(string_hash_to_newline(tooltip2), 18, 500);
-var _tt2_h = string_height_ext(string_hash_to_newline(tooltip2), 18, 500);
+    var _tt2_w = string_width_ext(string_hash_to_newline(tooltip2), 18, 500);
+    var _tt2_h = string_height_ext(string_hash_to_newline(tooltip2), 18, 500);
     var _box_w = _tt2_w + 24;
     var _box_x = mouse_x + 18;
     var _box_y = mouse_y + 20;

@@ -44,7 +44,7 @@ home_planet = 2;
 // Equipment- maybe the bikes should go here or something?          yes they should
 equipment = {};
 
-/// @type {Struct<Struct.ArtifactStruct>} 
+/// @type {Struct<Struct.ArtifactStruct>}
 artifact_map = {};
 
 squads = {};
@@ -140,7 +140,7 @@ role_spawn_buffs = {};
 previous_forge_masters = [];
 recruit_trial = 0;
 recruiting_type = "Death";
-sector_handler = new SectorHandler(); 
+sector_handler = new SectorHandler();
 
 gene_slaves = [];
 
@@ -167,18 +167,17 @@ serialize = function() {
             if (name[_coy][_mar] != "") {
                 var _marine_json = jsonify_marine_struct(_coy, _mar, false);
                 array_push(_marines, _marine_json);
-            } 
+            }
         }
     }
 
     var _artifact_list = [];
     var _artifact_names = struct_get_names(artifact_map);
     var _artifact_len = array_length(_artifact_names);
-    for (var k = 0; k < _artifact_len; k++){
+    for (var k = 0; k < _artifact_len; k++) {
         var _artifact_name = _artifact_names[k];
         var _artifact = artifact_map[$ _artifact_name];
         array_push(_artifact_list, _artifact.to_json());
-    
     }
 
     var save_data = {
@@ -244,7 +243,7 @@ deserialize = function(save_data) {
         "artifact_equipped",
         "artifact_struct",
         "artifact_list",
-        "sector_handler"
+        "sector_handler",
     ]; // skip automatic setting of certain vars, handle explicitly later
 
     // Automatic var setting
@@ -349,8 +348,8 @@ deserialize = function(save_data) {
         chapter_data = new ChapterGameData(save_data.chapter_data);
     }
 
-    if (struct_exists(save_data, "sector_handler")){
-        with (obj_ini.sector_handler){
+    if (struct_exists(save_data, "sector_handler")) {
+        with (obj_ini.sector_handler) {
             move_data_to_current_scope(save_data.sector_handler);
         }
     }

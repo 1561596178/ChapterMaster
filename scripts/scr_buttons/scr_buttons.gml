@@ -1459,7 +1459,7 @@ function ToggleButton(data = {}) constructor {
             draw_set_halign(text_halign);
             draw_set_valign(fa_middle);
             var text_y = y1 + (h / 2);
-draw_text_color_simple(text_x, text_y, L(str1), text_color, total_alpha);
+            draw_text_color_simple(text_x, text_y, L(str1), text_color, total_alpha);
             draw_set_alpha(1);
             draw_set_halign(fa_left);
         } else if (style == "box") {

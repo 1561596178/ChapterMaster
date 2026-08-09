@@ -1,4 +1,4 @@
-﻿enum eTRIALS {
+enum eTRIALS {
     BLOODDUEL,
     HUNTING,
     SURVIVAL,

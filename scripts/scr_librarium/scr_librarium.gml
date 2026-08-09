@@ -37,7 +37,7 @@ function scr_librarium_gui() {
             artif_descr += L("#To be identified it must be brought to a fleet with a Battle Barge or your Homeworld.");
         } else {
             artif_descr += LF("##It will be identified in {0} turns. #You may spend 150 Requisition to identify it immediately.", [artif_timer]);
-    
+
             //TODO solidify following button into a proper styled struct button
             var ident_button = draw_unit_buttons([532, 765], L("IDENTIFY NOW"), [1, 1], c_black,, fnt_40k_14b,, 1, c_gray);
             if (point_and_click(ident_button)) {

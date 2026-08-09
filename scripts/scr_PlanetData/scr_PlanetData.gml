@@ -1,4 +1,4 @@
-﻿/// @self Asset.GMObject.obj_star
+/// @self Asset.GMObject.obj_star
 /// @param {Real} _planet
 /// @param {Id.Instance.obj_star} _system
 function PlanetData(_planet, _system) constructor {

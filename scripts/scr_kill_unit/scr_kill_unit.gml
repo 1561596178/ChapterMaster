@@ -61,7 +61,6 @@ function kill_and_recover(company, unit_slot, equipment = true, gene_seed_collec
         unit.alter_equipment(strip, false, true);
     }
     if (gene_seed_collect && unit.base_group == "astartes") {
-
         obj_controller.gene_seed += unit.recoverable_geneseed();
     }
     if (obj_ini.race[company][unit_slot] == 1) {

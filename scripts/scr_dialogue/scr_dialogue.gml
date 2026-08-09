@@ -2926,8 +2926,7 @@ function scr_dialogue(diplo_keyphrase, data = {}) {
 
                     if (_unit.company == 0) {
                         diplo_text = L("I have looked into the strands of fate, with your chapter, and found that the future is not suspect for any of your men.  None of them have their minds poisoned by the taint of chaos.");
-                    }
-                    else if (_unit.company > 0) {
+                    } else if (_unit.company > 0) {
                         diplo_text = $"I have looked into the strands of fate, with your chapter.  Your 'battle brother' {_unit.name_role()} has a clouded, dark future- it is advised you watch him carefully.";
                     }
                 }
