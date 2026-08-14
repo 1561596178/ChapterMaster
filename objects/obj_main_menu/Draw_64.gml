@@ -21,8 +21,6 @@ if (global.game_version != "unknown version") {
     draw_text(1598, 858, _version_line);
 }
 
-draw_text(1598, 898, "汉化 v0.06");
-
 if (point_and_click([1400, 830, 1600, 900])) {
     clipboard_set_text($"{_build_date_line}\n{_version_line}");
     global.audio_manager.play_sfx(SFX_CLICK_SMALL);
