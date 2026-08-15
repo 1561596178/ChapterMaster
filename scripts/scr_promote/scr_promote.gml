@@ -32,17 +32,45 @@ function setup_promotion_popup() {
                 label: "Promote",
             });
             promote_button.bind_method = function() {
-                var mahreens = 0;
+                var mahreens = -1;
 
                 if (target_comp > 10) {
                     target_comp = 0;
                 }
 
-                for (var i = 0; i < 498; i++) {
-                    if (obj_ini.name[target_comp][i] == "" && obj_ini.name[target_comp][i + 1] == "") {
+                // 在目标连队中寻找空槽位(数组为动态增长,不能按固定上限扫描)
+                var _promote_slots = obj_ini.name[target_comp];
+                var _slot_len = array_length(_promote_slots);
+                for (var i = 0; i < _slot_len - 1; i++) {
+                    if (_promote_slots[i] == "" && _promote_slots[i + 1] == "") {
                         mahreens = i;
                         break;
                     }
+                }
+                // 无连续双空位:退而寻找单个空位
+                if (mahreens == -1) {
+                    for (var i = 0; i < _slot_len; i++) {
+                        if (_promote_slots[i] == "") {
+                            mahreens = i;
+                            break;
+                        }
+                    }
+                }
+                // 连队已满:扩展并行数组,为整个小队预留容量
+                if (mahreens == -1) {
+                    mahreens = _slot_len;
+                }
+                var _need_capacity = mahreens + 10;
+                while (array_length(obj_ini.name[target_comp]) < _need_capacity) {
+                    array_push(obj_ini.race[target_comp], 0);
+                    array_push(obj_ini.name[target_comp], "");
+                    array_push(obj_ini.role[target_comp], "");
+                    array_push(obj_ini.wep1[target_comp], "");
+                    array_push(obj_ini.wep2[target_comp], "");
+                    array_push(obj_ini.armour[target_comp], "");
+                    array_push(obj_ini.gear[target_comp], "");
+                    array_push(obj_ini.mobi[target_comp], "");
+                    array_push(obj_ini.TTRPG[target_comp], undefined);
                 }
                 // Gets the number of marines in the target company
                 var unit, squad_mover, moveable;

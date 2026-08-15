@@ -162,8 +162,10 @@ if (global.load == -1) {
 /// Called from save function to take all object variables and convert them to a json savable format and return it
 serialize = function() {
     var _marines = array_create(0);
-    for (var _coy = 0; _coy <= obj_ini.companies; _coy++) {
-        for (var _mar = 0; _mar < array_length(obj_ini.TTRPG[_coy]); _mar++) {
+    for (var _coy = 0; _coy <= obj_ini.companies && _coy < array_length(obj_ini.TTRPG); _coy++) {
+        var _tlen = array_length(obj_ini.TTRPG[_coy]);
+        var _nlen = array_length(name[_coy]);
+        for (var _mar = 0; _mar < _tlen && _mar < _nlen; _mar++) {
             if (name[_coy][_mar] != "") {
                 var _marine_json = jsonify_marine_struct(_coy, _mar, false);
                 array_push(_marines, _marine_json);
@@ -300,8 +302,56 @@ deserialize = function(save_data) {
         TTRPG[company][marine].load_json_data(struct);
     }
 
+    var _need_len = 501;
+    if (is_array(_marine_structs)) {
+        for (var m = 0; m < array_length(_marine_structs); m++) {
+            var _marine_json = _marine_structs[m];
+            if (is_struct(_marine_json)) {
+                var _mn = _marine_json.marine_number;
+                if (is_real(_mn) && _mn >= _need_len) {
+                    _need_len = _mn + 1;
+                }
+            }
+        }
+    }
+
     for (var _coy = 0; _coy <= 10; _coy++) {
-        for (var _mar = 0; _mar <= 500; _mar++) {
+        var _row_len = max(
+            array_length(race[_coy]),
+            array_length(name[_coy]),
+            array_length(role[_coy]),
+            array_length(wep1[_coy]),
+            array_length(wep2[_coy]),
+            array_length(armour[_coy]),
+            array_length(gear[_coy]),
+            array_length(mobi[_coy])
+        );
+        var _need = max(_need_len, _row_len);
+        while (array_length(race[_coy]) < _need) {
+            array_push(race[_coy], 1);
+        }
+        while (array_length(name[_coy]) < _need) {
+            array_push(name[_coy], "");
+        }
+        while (array_length(role[_coy]) < _need) {
+            array_push(role[_coy], "");
+        }
+        while (array_length(wep1[_coy]) < _need) {
+            array_push(wep1[_coy], "");
+        }
+        while (array_length(wep2[_coy]) < _need) {
+            array_push(wep2[_coy], "");
+        }
+        while (array_length(armour[_coy]) < _need) {
+            array_push(armour[_coy], "");
+        }
+        while (array_length(gear[_coy]) < _need) {
+            array_push(gear[_coy], "");
+        }
+        while (array_length(mobi[_coy]) < _need) {
+            array_push(mobi[_coy], "");
+        }
+        for (var _mar = 0; _mar < _need; _mar++) {
             TTRPG[_coy][_mar] = new TTRPG_stats("chapter", _coy, _mar, "blank");
         }
     }
@@ -327,8 +377,12 @@ deserialize = function(save_data) {
         for (var i = 0; i < _squad_count; i++) {
             var _squad_uid = _squad_uids[i];
             var _squad = new UnitSquad();
-            _squad.load_json_data(_squad_structs[$ _squad_uid]);
-            squads[$ _squad_uid] = _squad;
+            try {
+                _squad.load_json_data(_squad_structs[$ _squad_uid]);
+                squads[$ _squad_uid] = _squad;
+            } catch (e) {
+                LOGGER.exception("Failed to load squad " + _squad_uid, e);
+            }
         }
     }
 
